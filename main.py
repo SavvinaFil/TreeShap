@@ -6,14 +6,14 @@ from tree_input import load_tree, get_features_from_user, load_dataset
 from results import compute_shap_values, show_shap_values, plot_shap_values, save_results_to_excel
 
 def main(config):
-    print("=== Trustworthy AI: Decision Tree Explainability ===")
+    print("!!! Trustworthy AI: Decision Tree Explainability !!!")
 
-    # Load decision tree
+    # Load the decision tree
     model_path = config.datapath_decision_tree #input("Enter path to your pickled model (.pkl): ").strip()
     model = load_tree(model_path)
     print(f"Loaded model: {type(model).__name__}")
 
-    # Get feature names
+    # Get the feature names
     try:
         feature_names = list(model.feature_names_in_)
     except AttributeError:
@@ -37,7 +37,7 @@ def main(config):
     else:
         X_df = load_dataset(choice, feature_names)
 
-    # SHAP scope
+    # SHAP
     if choice != 1:
         print("\nDo you want SHAP for the whole dataset or a single row?")
         print("1) Whole dataset")
@@ -64,7 +64,7 @@ def main(config):
         output_dir = "outputs"
     os.makedirs(output_dir, exist_ok=True)
 
-    # Save SHAP results to Excel
+    # Save the SHAP results to Excel
     shap_array = np.array(shap_values)
     if shap_array.ndim == 3:
         reshaped = []
@@ -74,7 +74,7 @@ def main(config):
         shap_array = np.array(reshaped)
     save_results_to_excel(X_df_aligned, shap_array, feature_names, output_dir)
 
-    # Generate plots
+    # Generate some plots
     generate_plots = input("Do you want to generate SHAP plots? (yes/no): ").strip().lower()
     if generate_plots in ["yes", "y"]:
         plot_shap_values(shap_values, X_df_aligned, feature_names, output_dir, preds=preds)
