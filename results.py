@@ -78,7 +78,7 @@ def plot_shap_values(shap_values, X_df, feature_names, output_dir, selected_plot
         plt.savefig(os.path.join(output_dir, "shap_violin.png"), bbox_inches="tight")
         plt.close()
 
-    # Dependence (one plot per feature)
+    # Dependence (one plot per each feature)
     if 'dependence' in selected_plots:
         for feat in feature_names:
             plt.figure()
@@ -86,13 +86,6 @@ def plot_shap_values(shap_values, X_df, feature_names, output_dir, selected_plot
             plt.savefig(os.path.join(output_dir, f"dependence_{feat}.png"), bbox_inches="tight")
             plt.close()
 
-    """""Scatter plot like example [18] (SHAP vs feature with color optional)
-    if 'scatter' in selected_plots:
-        for feat in feature_names:
-            plt.figure()
-            shap.dependence_plot(feat, shap_array, X_df, interaction_index=None, show=False)
-            plt.savefig(os.path.join(output_dir, f"scatter_{feat}.png"), bbox_inches="tight")
-            plt.close()"""""
 
     print(f"SHAP plots saved to folder: {output_dir}")
 

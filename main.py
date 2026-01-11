@@ -43,13 +43,13 @@ def ask_int(question, min_val=0):
         print(f"Please enter an integer ≥ {min_val}")
 
 def main():
-    print("=== Trustworthy AI: Decision Tree Explainability ===\n")
+    print("Trustworthy AI: Decision Tree Explainability\n")
 
     config = load_config()
     config_changed = False
     first_run = not bool(config)
 
-    # Reset paths & preferences
+    # reset paths & preferences
     if not first_run:
         if "model_path" in config or "dataset_path" in config:
             if ask_yes_no("Do you want to reset the dataset/model paths (pkl/csv)?"):
@@ -59,7 +59,7 @@ def main():
                     config.pop("dataset_path", None)
                 config_changed = True
 
-        if ask_yes_no("Do you want to reset previous preferences (plots, Excel, dataset scope, output_dir)?"):
+        if ask_yes_no("Do you want to reset other preferences?"):
             model_path = config.get("model_path")
             dataset_path = config.get("dataset_path")
             output_dir = config.get("output_dir")
@@ -72,9 +72,9 @@ def main():
                 config["output_dir"] = output_dir
             config_changed = True
 
-    # Ask for paths if missing
+    # ask for paths if they are missing
     if "model_path" not in config:
-        config["model_path"] = input("Enter path to the Decision Tree model (.pkl): ").strip()
+        config["model_path"] = input("Enter path to the decision tree model (.pkl): ").strip()
         config_changed = True
 
     if "dataset_path" not in config:
@@ -85,7 +85,7 @@ def main():
         config["output_dir"] = input("Enter path for output folder: ").strip() or "outputs"
         config_changed = True
 
-    # Ask basic preferences if missing
+    # ask basic preferences if they are missing
     if "generate_plots" not in config:
         config["generate_plots"] = ask_yes_no("Do you want to generate SHAP plots?")
         config_changed = True
@@ -111,12 +111,12 @@ def main():
         save_config(config)
         print("\nPreferences saved to config.json\n")
 
-    # Load model and dataset
+
     model = load_tree(config["model_path"])
     feature_names = list(model.feature_names_in_)
     X_df = load_dataset(choice=2, feature_names=feature_names, path_override=config["dataset_path"])
 
-    # Apply dataset scope
+    # Apply dataset start and stop
     if config["dataset_scope"] == "subset":
         X_sample = X_df.iloc[config["subset_start"]:config["subset_end"]]
         print(f"Using dataset subset [{config['subset_start']}:{config['subset_end']}]")
@@ -124,7 +124,7 @@ def main():
         X_sample = X_df
         print("Using full dataset")
 
-    # Compute SHAP values
+    # compute shap values
     explainer, shap_values, X_df_aligned = compute_shap_values(model, X_sample)
 
     try:
@@ -144,7 +144,7 @@ def main():
     else:
         print("Excel output disabled (saved preference).")
 
-    # Interactive plots
+    # interactive plots
     if config["generate_plots"]:
         print("\nSelect SHAP plots to generate:")
         plots_options = ['beeswarm', 'bar', 'violin', 'dependence', 'all']
@@ -174,12 +174,12 @@ def main():
             if not selected_plots:
                 selected_plots = ['beeswarm', 'bar', 'violin', 'dependence']
 
-        # Create common folder with timestamp
+        # create common folder with time to recognize
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         plots_output_dir = os.path.join(config["output_dir"], f"{timestamp}_selected_plots")
         os.makedirs(plots_output_dir, exist_ok=True)
 
-        # Call plot function
+        # call the plot function
         plot_shap_values(
             shap_values,
             X_df_aligned,
