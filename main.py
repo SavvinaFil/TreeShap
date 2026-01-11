@@ -1,84 +1,194 @@
-import pickle
+import json
 import numpy as np
 import os
-import pandas as pd
-from tree_input import load_tree, get_features_from_user, load_dataset
-from results import compute_shap_values, show_shap_values, plot_shap_values, save_results_to_excel
+from datetime import datetime
+from tree_input import load_tree, load_dataset
+from results import (
+    compute_shap_values,
+    show_shap_values,
+    plot_shap_values,
+    save_results_to_excel
+)
 
-def main(config):
-    print("!!! Trustworthy AI: Decision Tree Explainability !!!")
+CONFIG_PATH = "config.json"
 
-    # Load the decision tree
-    model_path = config.datapath_decision_tree #input("Enter path to your pickled model (.pkl): ").strip()
-    model = load_tree(model_path)
-    print(f"Loaded model: {type(model).__name__}")
-
-    # Get the feature names
+def load_config():
     try:
-        feature_names = list(model.feature_names_in_)
-    except AttributeError:
-        n_features = model.n_features_in_
-        print(f"The model has {n_features} features, please provide names manually.")
-        feature_names = []
-        for i in range(n_features):
-            name = input(f"Enter name for feature {i+1}: ")
-            feature_names.append(name)
+        with open(CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
-    # Choose input method
-    print("\nInput options:")
-    print("1) Manual single-sample entry")
-    print("2) Load CSV file")
-    print("3) Load Excel (.xlsx) file")
-    choice = int(input("Choose 1/2/3: ").strip())
+def save_config(config):
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
 
-    if choice == 1:
-        feature_values = get_features_from_user(feature_names)
-        X_df = pd.DataFrame([feature_values], columns=feature_names)
-    else:
-        X_df = load_dataset(choice, feature_names)
+def ask_yes_no(question):
+    while True:
+        answer = input(f"{question} (yes/no): ").strip().lower()
+        if answer in ["yes", "y"]:
+            return True
+        if answer in ["no", "n"]:
+            return False
+        print("Please answer yes or no.")
 
-    # SHAP
-    if choice != 1:
-        print("\nDo you want SHAP for the whole dataset or a single row?")
-        print("1) Whole dataset")
-        print("2) Single row")
-        row_choice = int(input("Choose 1 or 2: ").strip())
-        if row_choice == 2:
-            row_num = int(input(f"Enter row number between 1 and {len(X_df)}: ").strip())
-            X_sample = X_df.iloc[[row_num-1]]
+def ask_int(question, min_val=0):
+    while True:
+        try:
+            value = int(input(question))
+            if value >= min_val:
+                return value
+        except ValueError:
+            pass
+        print(f"Please enter an integer ≥ {min_val}")
+
+def main():
+    print("=== Trustworthy AI: Decision Tree Explainability ===\n")
+
+    config = load_config()
+    config_changed = False
+    first_run = not bool(config)
+
+    # Reset paths & preferences
+    if not first_run:
+        if "model_path" in config or "dataset_path" in config:
+            if ask_yes_no("Do you want to reset the dataset/model paths (pkl/csv)?"):
+                if ask_yes_no("Reset model_path (.pkl)?"):
+                    config.pop("model_path", None)
+                if ask_yes_no("Reset dataset_path (.csv)?"):
+                    config.pop("dataset_path", None)
+                config_changed = True
+
+        if ask_yes_no("Do you want to reset previous preferences (plots, Excel, dataset scope, output_dir)?"):
+            model_path = config.get("model_path")
+            dataset_path = config.get("dataset_path")
+            output_dir = config.get("output_dir")
+            config = {}
+            if model_path:
+                config["model_path"] = model_path
+            if dataset_path:
+                config["dataset_path"] = dataset_path
+            if output_dir:
+                config["output_dir"] = output_dir
+            config_changed = True
+
+    # Ask for paths if missing
+    if "model_path" not in config:
+        config["model_path"] = input("Enter path to the Decision Tree model (.pkl): ").strip()
+        config_changed = True
+
+    if "dataset_path" not in config:
+        config["dataset_path"] = input("Enter path to the dataset (.csv): ").strip()
+        config_changed = True
+
+    if "output_dir" not in config:
+        config["output_dir"] = input("Enter path for output folder: ").strip() or "outputs"
+        config_changed = True
+
+    # Ask basic preferences if missing
+    if "generate_plots" not in config:
+        config["generate_plots"] = ask_yes_no("Do you want to generate SHAP plots?")
+        config_changed = True
+
+    if "save_excel" not in config:
+        config["save_excel"] = ask_yes_no("Do you want to save results to Excel?")
+        config_changed = True
+
+    if "dataset_scope" not in config:
+        print("\nChoose dataset scope:")
+        print("1 → Whole dataset")
+        print("2 → Subset of rows")
+        choice = ask_int("Your choice (1 or 2): ", min_val=1)
+        if choice == 1:
+            config["dataset_scope"] = "whole"
         else:
-            X_sample = X_df
+            config["dataset_scope"] = "subset"
+            config["subset_start"] = ask_int("Start row index: ", 0)
+            config["subset_end"] = ask_int("End row index (exclusive): ", 1)
+        config_changed = True
+
+    if config_changed or first_run:
+        save_config(config)
+        print("\nPreferences saved to config.json\n")
+
+    # Load model and dataset
+    model = load_tree(config["model_path"])
+    feature_names = list(model.feature_names_in_)
+    X_df = load_dataset(choice=2, feature_names=feature_names, path_override=config["dataset_path"])
+
+    # Apply dataset scope
+    if config["dataset_scope"] == "subset":
+        X_sample = X_df.iloc[config["subset_start"]:config["subset_end"]]
+        print(f"Using dataset subset [{config['subset_start']}:{config['subset_end']}]")
     else:
         X_sample = X_df
+        print("Using full dataset")
 
     # Compute SHAP values
-    shap_expl, shap_values, X_df_aligned = compute_shap_values(model, X_sample)
-    preds = model.predict(X_df_aligned)
+    explainer, shap_values, X_df_aligned = compute_shap_values(model, X_sample)
 
-    # Print SHAP values
+    try:
+        preds = model.predict(X_df_aligned)
+    except Exception:
+        preds = None
+
     show_shap_values(shap_values, feature_names, preds)
 
-    # Output directory
-    output_dir = input("\nEnter output directory for results (default='outputs'): ").strip()
-    if output_dir == "":
-        output_dir = "outputs"
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(config["output_dir"], exist_ok=True)
 
-    # Save the SHAP results to Excel
-    shap_array = np.array(shap_values)
-    if shap_array.ndim == 3:
-        reshaped = []
-        for i in range(len(preds)):
-            cls = int(preds[i])
-            reshaped.append(shap_array[i, :, cls])
-        shap_array = np.array(reshaped)
-    save_results_to_excel(X_df_aligned, shap_array, feature_names, output_dir)
+    if config["save_excel"]:
+        shap_array = np.array(shap_values)
+        if shap_array.ndim == 3 and preds is not None:
+            shap_array = shap_array[np.arange(len(preds)), :, preds]
+        save_results_to_excel(X_df_aligned, shap_array, feature_names, config["output_dir"])
+    else:
+        print("Excel output disabled (saved preference).")
 
-    # Generate some plots
-    generate_plots = input("Do you want to generate SHAP plots? (yes/no): ").strip().lower()
-    if generate_plots in ["yes", "y"]:
-        plot_shap_values(shap_values, X_df_aligned, feature_names, output_dir, preds=preds)
+    # Interactive plots
+    if config["generate_plots"]:
+        print("\nSelect SHAP plots to generate:")
+        plots_options = ['beeswarm', 'bar', 'violin', 'dependence', 'all']
+        for i, p in enumerate(plots_options, 1):
+            print(f"{i} → {p}")
+        choice = input("Enter numbers separated by comma (e.g., 1,3) or 'all': ").strip().lower()
+        selected_plots = []
 
+        # Check if user typed 'all'
+        if choice == 'all':
+            selected_plots = ['beeswarm', 'bar', 'violin', 'dependence']
+        else:
+            for c in choice.split(','):
+                c = c.strip()
+                if not c:
+                    continue
+                try:
+                    idx = int(c) - 1
+                    if 0 <= idx < len(plots_options) - 1:
+                        selected_plots.append(plots_options[idx])
+                    elif idx == len(plots_options) - 1:  # number corresponding to "all"
+                        selected_plots = ['beeswarm', 'bar', 'violin', 'dependence']
+                        break
+                except ValueError:
+                    continue
+
+            if not selected_plots:
+                selected_plots = ['beeswarm', 'bar', 'violin', 'dependence']
+
+        # Create common folder with timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        plots_output_dir = os.path.join(config["output_dir"], f"{timestamp}_selected_plots")
+        os.makedirs(plots_output_dir, exist_ok=True)
+
+        # Call plot function
+        plot_shap_values(
+            shap_values,
+            X_df_aligned,
+            feature_names,
+            plots_output_dir,
+            selected_plots=selected_plots
+        )
 
 if __name__ == "__main__":
     main()
+
+

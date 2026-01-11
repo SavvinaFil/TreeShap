@@ -1,0 +1,8 @@
+{
+  "model_path": "realistic_decision_tree.pkl",
+  "dataset_path": "realistic_dataset.csv",
+  "output_dir": "outputs",
+  "generate_plots": true,
+  "save_excel": true,
+  "dataset_scope": "whole"
+}
