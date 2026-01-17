@@ -21,7 +21,5 @@ def load_dataset(choice, feature_names=None, path_override=None):
 
     if feature_names is None:
         feature_names = list(df.columns)
-        if "Loan_Approved" in feature_names:
-            feature_names.remove("Loan_Approved")
 
     return df[feature_names]

@@ -12,6 +12,7 @@ from results import (
 
 CONFIG_PATH = "config.json"
 
+
 def load_config():
     try:
         with open(CONFIG_PATH, "r") as f:
@@ -27,6 +28,7 @@ def save_config(config):
     with open(CONFIG_PATH, "w") as f:
         json.dump(config, f, indent=2)
 
+
 def ask_yes_no(question):
     while True:
         answer = input(f"{question} (yes/no): ").strip().lower()
@@ -35,6 +37,7 @@ def ask_yes_no(question):
         if answer in ["no", "n"]:
             return False
         print("Please answer yes or no.")
+
 
 def ask_int(question, min_val=0):
     while True:
@@ -45,6 +48,7 @@ def ask_int(question, min_val=0):
         except ValueError:
             pass
         print(f"Please enter an integer ≥ {min_val}")
+
 
 def main():
     print("Trustworthy AI: Decision Tree Explainability\n")
@@ -115,10 +119,27 @@ def main():
         save_config(config)
         print("\nPreferences saved to config.json\n")
 
-
+    # load model and dataset
     model = load_tree(config["model_path"])
-    feature_names = list(model.feature_names_in_)
-    X_df = load_dataset(choice=2, feature_names=feature_names, path_override=config["dataset_path"])
+
+    # προσπαθούμε να πάρουμε feature names από το μοντέλο (generic)
+    try:
+        feature_names = list(model.feature_names_in_)
+    except AttributeError:
+        feature_names = None
+
+    X_df = load_dataset(
+        choice=2,
+        feature_names=feature_names,
+        path_override=config["dataset_path"]
+    )
+
+    # αν δεν είχαμε feature_names από το μοντέλο, τα παίρνουμε τώρα από το dataframe
+    if feature_names is None:
+        feature_names = list(X_df.columns)
+
+    # πάρουμε και τις κλάσεις του μοντέλου (generic, μπορεί να είναι None για regression)
+    class_labels = getattr(model, "classes_", None)
 
     # apply dataset start and stop
     if config["dataset_scope"] == "subset":
@@ -128,23 +149,32 @@ def main():
         X_sample = X_df
         print("Using full dataset")
 
-    # compute shap values
+    # compute SHAP values
     explainer, shap_values, X_df_aligned = compute_shap_values(model, X_sample)
 
+    # calculate preds
     try:
         preds = model.predict(X_df_aligned)
-    except Exception:
-        preds = None
+        unique_classes, class_counts = np.unique(preds, return_counts=True)
 
+        print(f"\nPredictions of the model:")
+        for cls, cnt in zip(unique_classes, class_counts):
+            percentage = (cnt / len(preds)) * 100
+            print(f"  - Class {cls}: {cnt} samples ({percentage:.1f}%)")
+    except Exception as e:
+        print(f"Mistake when you calculate the predictions: {e}")
+        return
+
+    # show shap values
     show_shap_values(shap_values, feature_names, preds)
 
+    # create output directory
     os.makedirs(config["output_dir"], exist_ok=True)
 
+    # save predictions to Excel
     if config["save_excel"]:
         shap_array = np.array(shap_values)
-        if shap_array.ndim == 3 and preds is not None:
-            shap_array = shap_array[np.arange(len(preds)), :, preds]
-        save_results_to_excel(X_df_aligned, shap_array, feature_names, config["output_dir"])
+        save_results_to_excel(X_df_aligned, shap_array, feature_names, preds, config["output_dir"])
     else:
         print("Excel output disabled (saved preference).")
 
@@ -157,8 +187,8 @@ def main():
         choice = input("Enter numbers separated by comma (e.g., 1,3) or for all 7: ").strip().lower()
         selected_plots = []
 
-        # check if user typed all
-        if choice == 7:
+        # Check if user typed 7 (for "all")
+        if choice == "7":
             selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
         else:
             for c in choice.split(','):
@@ -169,28 +199,31 @@ def main():
                     idx = int(c) - 1
                     if 0 <= idx < len(plots_options) - 1:
                         selected_plots.append(plots_options[idx])
-                    elif idx == len(plots_options) - 1:  # number corresponding to "all"
+                    elif idx == len(plots_options) - 1:
                         selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
                         break
                 except ValueError:
                     continue
 
-            if not selected_plots:
-                selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
+        if not selected_plots:
+            selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
 
-        # create common folder with time to recognize
+        # create common folder with timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         plots_output_dir = os.path.join(config["output_dir"], f"{timestamp}_selected_plots")
         os.makedirs(plots_output_dir, exist_ok=True)
 
-        # call the plot function
         plot_shap_values(
             shap_values,
             X_df_aligned,
             feature_names,
+            preds,
             plots_output_dir,
-            selected_plots=selected_plots
+            selected_plots=selected_plots,
+            class_labels=class_labels
         )
+
 
 if __name__ == "__main__":
     main()
+

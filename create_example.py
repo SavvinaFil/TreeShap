@@ -10,7 +10,7 @@ n_samples = 1000
 # first create the ages
 ages = np.random.randint(18, 70, size=n_samples)
 
-# calculate the max years of employmwnt per person we suppose they started after 18 or later
+# calculate the max years of employmεnt per person we suppose they started after 18 or later
 max_work_years = ages - 18
 
 # per person years of employment can be from 0 to max_work_years
@@ -32,8 +32,7 @@ data = {
 
 df = pd.DataFrame(data)
 
-# Πιο realistic κριτήρια για έγκριση δανείου
-# Λαμβάνουμε υπόψη πολλαπλούς παράγοντες
+
 df["Loan Approved"] = (
     (df["Income per Year"] > 40000) &
     (df["Age"] >= 30) &
@@ -46,7 +45,7 @@ df["Loan Approved"] = (
 ).astype(int)
 
 
-print("\nDataset Statistics?\n")
+print("\nDataset Statistics\n")
 print(f"Total samples: {len(df)}")
 print(f"\nAge range: {df['Age'].min()} - {df['Age'].max()}")
 print(f"Income range: ${df['Income per Year'].min():,} - ${df['Income per Year'].max():,}")

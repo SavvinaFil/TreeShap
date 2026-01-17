@@ -3,6 +3,6 @@
   "generate_plots": true,
   "save_excel": true,
   "dataset_scope": "whole",
-  "model_path": "realistic_decision_tree.pkl",
-  "dataset_path": "realistic_dataset.csv"
+  "dataset_path": "realistic_dataset.csv",
+  "model_path": "realistic_decision_tree.pkl"
 }
