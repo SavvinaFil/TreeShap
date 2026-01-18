@@ -7,19 +7,19 @@ np.random.seed(42)
 
 n_samples = 1000
 
-# first create the ages
+# First create the ages
 ages = np.random.randint(18, 70, size=n_samples)
 
-# calculate the max years of employmεnt per person we suppose they started after 18 or later
+# Calculate the max years of employment per person we suppose they started after 18 or later
 max_work_years = ages - 18
 
-# per person years of employment can be from 0 to max_work_years
+# Per person years of employment can be from 0 to max_work_years
 years_of_employment = np.array([
     np.random.randint(0, max(1, max_years + 1))
     for max_years in max_work_years
 ])
 
-# make realistic incomes that increase with age and experience
+# Make realistic incomes that increase when do so age and experience
 base_income = np.random.randint(15000, 50000, size=n_samples)
 experience_bonus = years_of_employment * np.random.randint(500, 2000, size=n_samples)
 income_per_year = np.clip(base_income + experience_bonus, 10000, 150000)
@@ -53,12 +53,12 @@ print(f"Years of Employment range: {df['Years of Employment'].min()} - {df['Year
 print(f"\nLoan Approved: {df['Loan Approved'].sum()} ({df['Loan Approved'].mean()*100:.1f}%)")
 print(f"Loan Rejected: {(1-df['Loan Approved']).sum()} ({(1-df['Loan Approved'].mean())*100:.1f}%)")
 
-# save dataset
+# Save dataset
 dataset_path = "realistic_dataset.csv"
 df.to_csv(dataset_path, index=False)
 print(f"\nDataset saved: {dataset_path}")
 
-# train model
+# Train model
 features = [
     "Age",
     "Income per Year",
@@ -72,7 +72,7 @@ model = RandomForestClassifier(n_estimators=50, max_depth=4, random_state=42)
 model.fit(X, y)
 
 
-# save the model
+# Save the model
 model_path = "realistic_decision_tree.pkl"
 with open(model_path, "wb") as f:
     pickle.dump(model, f)

@@ -57,7 +57,7 @@ def main():
     config_changed = False
     first_run = not bool(config)
 
-    # reset paths & preferences
+    # Reset paths and preferences
     if not first_run:
         if "model_path" in config or "dataset_path" in config:
             if ask_yes_no("Do you want to reset the dataset/model paths (pkl/csv)?"):
@@ -80,7 +80,7 @@ def main():
                 config["output_dir"] = output_dir
             config_changed = True
 
-    # ask for paths if they are missing
+    # Ask for paths if they are missing
     if "model_path" not in config:
         config["model_path"] = input("Enter path to the decision tree model (.pkl): ").strip()
         config_changed = True
@@ -93,7 +93,7 @@ def main():
         config["output_dir"] = input("Enter path for output folder (if not just press enter): ").strip() or "outputs"
         config_changed = True
 
-    # ask basic preferences if they are missing
+    # Ask basic preferences if they are missing
     if "generate_plots" not in config:
         config["generate_plots"] = ask_yes_no("Do you want to generate SHAP plots?")
         config_changed = True
@@ -119,29 +119,12 @@ def main():
         save_config(config)
         print("\nPreferences saved to config.json\n")
 
-    # load model and dataset
+    # Load model and dataset
     model = load_tree(config["model_path"])
+    feature_names = list(model.feature_names_in_)
+    X_df = load_dataset(choice=2, feature_names=feature_names, path_override=config["dataset_path"])
 
-    # προσπαθούμε να πάρουμε feature names από το μοντέλο (generic)
-    try:
-        feature_names = list(model.feature_names_in_)
-    except AttributeError:
-        feature_names = None
-
-    X_df = load_dataset(
-        choice=2,
-        feature_names=feature_names,
-        path_override=config["dataset_path"]
-    )
-
-    # αν δεν είχαμε feature_names από το μοντέλο, τα παίρνουμε τώρα από το dataframe
-    if feature_names is None:
-        feature_names = list(X_df.columns)
-
-    # πάρουμε και τις κλάσεις του μοντέλου (generic, μπορεί να είναι None για regression)
-    class_labels = getattr(model, "classes_", None)
-
-    # apply dataset start and stop
+    # Apply dataset start and stop
     if config["dataset_scope"] == "subset":
         X_sample = X_df.iloc[config["subset_start"]:config["subset_end"]]
         print(f"Using dataset subset [{config['subset_start']}:{config['subset_end']}]")
@@ -149,47 +132,49 @@ def main():
         X_sample = X_df
         print("Using full dataset")
 
-    # compute SHAP values
+    # Compute shap values
     explainer, shap_values, X_df_aligned = compute_shap_values(model, X_sample)
 
-    # calculate preds
+    # Calculate the predictions
     try:
         preds = model.predict(X_df_aligned)
         unique_classes, class_counts = np.unique(preds, return_counts=True)
 
-        print(f"\nPredictions of the model:")
+        print(f"\nModel predictions")
         for cls, cnt in zip(unique_classes, class_counts):
             percentage = (cnt / len(preds)) * 100
             print(f"  - Class {cls}: {cnt} samples ({percentage:.1f}%)")
     except Exception as e:
-        print(f"Mistake when you calculate the predictions: {e}")
+        print(f"Error when calculating predictions: {e}")
         return
 
-    # show shap values
+    # Show shap values
     show_shap_values(shap_values, feature_names, preds)
 
-    # create output directory
+    # Create output directory
     os.makedirs(config["output_dir"], exist_ok=True)
 
-    # save predictions to Excel
+    # Save results to excel
     if config["save_excel"]:
         shap_array = np.array(shap_values)
         save_results_to_excel(X_df_aligned, shap_array, feature_names, preds, config["output_dir"])
     else:
         print("Excel output disabled (saved preference).")
 
-    # interactive plots
+    # Interactive plots
     if config["generate_plots"]:
         print("\nSelect SHAP plots to generate:")
-        plots_options = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap', 'all']
+        plots_options = ['beeswarm', 'bar', 'violin', 'dependence', 'decision_map',
+                         'interactive_decision_map', 'heatmap', 'interactive_heatmap', 'all']
         for i, p in enumerate(plots_options, 1):
             print(f"{i} → {p}")
-        choice = input("Enter numbers separated by comma (e.g., 1,3) or for all 7: ").strip().lower()
+        choice = input("Enter numbers separated by comma (e.g., 1,3,8) or for all 9: ").strip().lower()
         selected_plots = []
 
-        # Check if user typed 7 (for "all")
-        if choice == "7":
-            selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
+        # Check if user typed 9 (for "all")
+        if choice == "9":
+            selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'decision_map',
+                              'interactive_decision_map', 'heatmap', 'interactive_heatmap']
         else:
             for c in choice.split(','):
                 c = c.strip()
@@ -199,19 +184,22 @@ def main():
                     idx = int(c) - 1
                     if 0 <= idx < len(plots_options) - 1:
                         selected_plots.append(plots_options[idx])
-                    elif idx == len(plots_options) - 1:
-                        selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
+                    elif idx == len(plots_options) - 1:  # this is corresponding to "all"
+                        selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'decision_map', 'interactive_decision_map',
+                                          'heatmap', 'interactive_heatmap']
                         break
                 except ValueError:
                     continue
 
         if not selected_plots:
-            selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'heatmap', 'interactive_heatmap']
+            selected_plots = ['beeswarm', 'bar', 'violin', 'dependence', 'decision_map',
+                              'interactive_decision_map', 'heatmap', 'interactive_heatmap']
 
-        # create common folder with timestamp
+        # Create common folder with timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         plots_output_dir = os.path.join(config["output_dir"], f"{timestamp}_selected_plots")
         os.makedirs(plots_output_dir, exist_ok=True)
+
 
         plot_shap_values(
             shap_values,
@@ -220,10 +208,9 @@ def main():
             preds,
             plots_output_dir,
             selected_plots=selected_plots,
-            class_labels=class_labels
+            explainer=explainer
         )
 
 
 if __name__ == "__main__":
     main()
-
