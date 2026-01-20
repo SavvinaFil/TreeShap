@@ -1,17 +1,19 @@
 import json
 import numpy as np
 import os
+from pathlib import Path
 from datetime import datetime
-from tree_input import load_tree, load_dataset
-from results import (
+from analysis.tabular.tree_based.tree_input import load_tree, load_dataset
+from output.results import (
     compute_shap_values,
     show_shap_values,
     plot_shap_values,
     save_results_to_excel
 )
-from generate_notebook import generate_analysis_notebook
+from output.generate_notebook import generate_analysis_notebook
 
-CONFIG_PATH = "config.json"
+ROOT_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = ROOT_DIR / "config.json"
 
 
 def load_config():
