@@ -180,9 +180,28 @@ if __name__ == "__main__":
         history.append(loss)
         if (epoch + 1) % 10 == 0:
             print(f"Epoch {epoch+1}/{CONFIG["epochs"]} | Loss: {loss:.4f}")
-
-    # Save Artifacts
-    torch.save(model.state_dict(), os.path.join(script_dir, "lstm_model.pth"))
-    joblib.dump(processor.scaler, os.path.join(script_dir, "scaler.joblib"))
     
-    print("Training Complete. Model and Scaler saved.")
+    # -------------------------------
+    # 6. Save SHAP-Ready Agnostic Tensors
+    # -------------------------------
+    # Extract tensors from the datasets
+    # train_ds.tensors[0] is X (features), [1] is y (labels)
+    X_train_tensor = train_loader.dataset.tensors[0]
+    X_test_tensor = test_loader.dataset.tensors[0]
+
+    # Define background (representative sample of training data)
+    # SHAP usually needs 50-200 samples for the background
+    background_samples = X_train_tensor[:100] 
+    
+    # Define test data to explain (e.g., the first 50 samples of the test set)
+    explain_data = X_test_tensor[:50]
+
+    # Save as agnostic .pt files
+    torch.save(background_samples, os.path.join(script_dir, "background_data.pt"))
+    torch.save(explain_data, os.path.join(script_dir, "test_data_to_explain.pt"))
+
+    # Also save the whole model object (not just state_dict) 
+    # for true model-agnostic loading in the explainer
+    torch.save(model.state_dict(), os.path.join(script_dir, "lstm_model.pth"))
+
+    print("SHAP artifacts saved: background_data.pt, test_data_to_explain.pt, full_lstm_model.pth")
