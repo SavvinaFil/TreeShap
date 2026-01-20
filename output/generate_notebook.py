@@ -202,6 +202,50 @@ SHAP values provide a unified measure of feature importance and show how each fe
 """
     cells.append(create_markdown_cell(title))
 
+    # Add SHAP explanation section
+    shap_intro = """
+## What is SHAP?
+
+**SHAP (SHapley Additive exPlanations)** is a game-theoretic approach to explain the output of any machine learning model. It connects optimal credit allocation with local explanations using the classic Shapley values from game theory and their related extensions.
+
+### Key Principles:
+
+**1. Unified Framework**
+- SHAP values unify multiple existing methods (LIME, DeepLIFT, Layer-Wise Relevance Propagation, etc.)
+- Provides a single, theoretically sound approach to model interpretation
+
+**2. Local Explanations**
+- Explains individual predictions by computing the contribution of each feature
+- Shows how each feature value pushes the prediction away from the base value (average model output)
+
+**3. Consistency and Accuracy**
+- Based on Shapley values from cooperative game theory
+- Satisfies desirable properties: local accuracy, missingness, and consistency
+
+**4. Model-Agnostic Approach**
+- Works with any machine learning model
+- For tree-based models (like Random Forests, XGBoost), SHAP provides exact solutions efficiently
+
+### How SHAP Values Work:
+
+For a prediction, SHAP answers: **"How much did each feature contribute to moving the prediction from the base value to the final prediction?"**
+
+- **Base value**: The average model output over the training dataset
+- **SHAP value**: The contribution of each feature to the prediction
+- **Final prediction** = Base value + sum of all SHAP values
+
+### Why SHAP for Decision Trees?
+
+TreeExplainer, the algorithm used in this analysis, provides:
+- Fast, exact computation for tree-based models
+- No sampling required
+- Polynomial time complexity
+- Consistent and accurate feature attributions
+
+---
+"""
+    cells.append(create_markdown_cell(shap_intro))
+
     # Add model information if provided
     if model_info:
         info_text = f"""
