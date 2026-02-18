@@ -3,6 +3,14 @@ import shap
 import numpy as np
 import matplotlib.pyplot as plt
 from .base import TimeseriesExplainerBase
+from datetime import datetime
+from output.results import (
+    compute_shap_values,
+    show_shap_values,
+    plot_shap_values,
+    save_results_to_excel
+)
+from output.generate_notebook import generate_analysis_notebook
 
 class LSTMForecaster(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim):
@@ -17,12 +25,15 @@ class LSTMExplainer(TimeseriesExplainerBase):
     def load_model(self):
         """Reconstructs the model from state_dict for better stability."""
         # 1. Get parameters from config
-        input_dim = self.config.get("input_dim", 12)
-        hidden_dim = self.config.get("hidden_size", 16)
+        self.input_dim = self.config.get("input_dim", 12)
+        self.hidden_dim = self.config.get("hidden_size", 16)
+        self.model_type = self.config.get("model_type", "lstm")
+        self.output_dim = 1
+        self.output_labels = self.config.get("output_labels", 0)
         
         # 2. Reconstruct the 'Skeleton' (Architecture)
         # This works because the class LSTMForecaster is defined in this same file
-        self.model = LSTMForecaster(input_dim=input_dim, hidden_dim=hidden_dim)
+        self.model = LSTMForecaster(input_dim=self.input_dim, hidden_dim=self.hidden_dim)
         
         # 3. Load the 'Muscles' (Weights)
         model_full_path = self.get_path("model_path")
@@ -86,18 +97,61 @@ class LSTMExplainer(TimeseriesExplainerBase):
         
         shap_flat = val_to_plot.reshape(val_to_plot.shape[0], -1)
         data_flat = self.raw_data.reshape(self.raw_data.shape[0], -1)
+        
+        # Create a new figure to avoid overlapping with previous plots
+        plt.figure(figsize=(12, 8))
 
-        # 4. Standard SHAP Summary Plot
-        plt.figure(figsize=(10, 8))
+        # 4. Generate the Summary Plot
+        # We use the flattened names and data you prepared
         shap.summary_plot(
             shap_flat, 
             data_flat, 
             feature_names=flat_names, 
-            show=False
+            show=False  # Crucial: allows us to save before the window closes
         )
-        
+
+        # 5. Save to the Output Directory
         save_path = os.path.join(output_dir, "timeseries_shap_summary.png")
-        plt.savefig(save_path, bbox_inches='tight')
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+
+        # 6. Clean up memory
         plt.close()
+
+        print(f"SHAP plot successfully saved to: {save_path}")
+
+        # Common folder with timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        task_type = "regression"
+        plots_output_dir = os.path.join(output_dir, f"{timestamp}_{task_type}_plots")
+        #os.makedirs(plots_output_dir, exist_ok=True)
         
-        print("Analysis complete.")
+        model_info = {
+            'model_type': type(self.model_type).__name__,
+            'n_features': self.input_dim,
+            'n_classes': self.output_dim,
+            'n_samples': 12,
+            'feature_names': flat_names,
+            'classes': "PV",
+            'output_labels': self.output_labels
+        }
+
+        # Add regression-specific info
+        is_classification = False
+        if not is_classification:
+            model_info['prediction_range'] = f"[{0:.2f}, {5:.2f}]"
+            model_info['n_bins'] = 1
+
+        # try:
+        #     notebook_path = generate_analysis_notebook(
+        #         plots_output_dir,
+        #         model_info=model_info
+        #     )
+        #     print(f"Notebook generated: {notebook_path}")
+
+        # except Exception as e:
+        #     print(f"\nError generating notebook: {e}")
+        #     print("All plots are still available in the output directory.")
+        #     import traceback
+        #     traceback.print_exc()
+        
+        # print("Analysis complete.")

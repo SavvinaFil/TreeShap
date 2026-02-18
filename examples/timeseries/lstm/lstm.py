@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
 from torch.utils.data import TensorDataset, DataLoader
+from pathlib import Path
 
 # -------------------------------
 # 1. Configuration
@@ -15,9 +16,9 @@ from torch.utils.data import TensorDataset, DataLoader
 CONFIG = {
     "batch_size": 32,
     "look_back": 6,
-    "epochs": 100,
+    "epochs": 50,
     "hidden_size": 16,
-    "lr": 5e-4,
+    "lr": 5e-3,
     "weight_decay": 1e-4,
     "device": torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     "data_years": [2022, 2023]
@@ -156,13 +157,23 @@ if __name__ == "__main__":
     
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = Path(__file__).resolve().parents[3]
+    
+    # Define the new paths
+    model_dir = root_dir / "source" / "models"
+    data_dir = root_dir / "source" / "data"
+
+    # Create the folders if they don't exist
+    # parents=True creates 'source' if it's missing; exist_ok=True prevents errors if they already exist
+    model_dir.mkdir(parents=True, exist_ok=True)
+    data_dir.mkdir(parents=True, exist_ok=True)
 
     # Move up one level and then into the 'data' folder
-    data_dir = os.path.join(script_dir, "..", "data")
+    train_data_dir = os.path.join(script_dir, "..", "data")
 
     df = processor.load_and_merge(
-        os.path.join(data_dir, "ProsumerHourly_withUTC.csv"),
-        os.path.join(data_dir, "WeatherData.csv")
+        os.path.join(train_data_dir, "ProsumerHourly_withUTC.csv"),
+        os.path.join(train_data_dir, "WeatherData.csv")
     )
     df = processor.add_features(df)
     train_loader, test_loader = processor.prepare_loaders(df)
@@ -196,12 +207,11 @@ if __name__ == "__main__":
     # Define test data to explain (e.g., the first 50 samples of the test set)
     explain_data = X_test_tensor[:50]
 
-    # Save as agnostic .pt files
-    torch.save(background_samples, os.path.join(script_dir, "background_data.pt"))
-    torch.save(explain_data, os.path.join(script_dir, "test_data_to_explain.pt"))
+    # Save the model
+    torch.save(model.state_dict(), model_dir / "lstm_model.pth")
 
-    # Also save the whole model object (not just state_dict) 
-    # for true model-agnostic loading in the explainer
-    torch.save(model.state_dict(), os.path.join(script_dir, "lstm_model.pth"))
+    # Save the data
+    torch.save(background_samples, data_dir / "lstm_background_data.pt")
+    torch.save(explain_data, data_dir / "lstm_data_to_explain.pt")
 
     print("SHAP artifacts saved: background_data.pt, test_data_to_explain.pt, full_lstm_model.pth")

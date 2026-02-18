@@ -228,8 +228,14 @@ TreeExplainer, the algorithm used in this analysis, provides:
     if model_info:
         classes_display = []
         for cls in model_info.get('classes', []):
-            class_label = output_labels.get(str(int(cls)), f"Class {cls}")
-            classes_display.append(f"{cls} ({class_label})")
+            # Try to treat cls as an index first
+            try:
+                idx_str = str(int(cls))
+                class_label = output_labels.get(idx_str, f"Class {cls}")
+                classes_display.append(f"{cls} ({class_label})")
+            except (ValueError, TypeError):
+
+                classes_display.append(str(cls))
 
         info_text = f"""
 ## Model Information
