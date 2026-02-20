@@ -1,31 +1,17 @@
 import json
 import os
 from analysis import ANALYSIS_ROUTER
-import argparse
-
-"""
-python main.py --config examples/timeseries/lstm/config.json
-
-"""
 
 
 def main():
-    # 1. Setup the Argument Parser
-    parser = argparse.ArgumentParser(description="Run SHAP Analysis")
-    parser.add_argument('--config', type=str, help='Path to the config.json file')
-    args = parser.parse_args()
+    # Get the directory where the script is located
+    base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # 2. Use the provided path OR fall back to a default
-    if args.config:
-        config_path = args.config
-    else:
-        # Fallback: look in the same directory as main.py
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(base_dir, "config.json")
+    config_path = os.path.join(base_dir, "config.json")
 
-    # 3. Rest of your logic
     if not os.path.exists(config_path):
         print(f"Error: {config_path} not found.")
+        print(f"Current Working Directory: {os.getcwd()}")
         return
 
     with open(config_path, 'r') as f:

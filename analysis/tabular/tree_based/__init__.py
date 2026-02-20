@@ -37,7 +37,7 @@ def is_classifier(model):
 
 
 def convert_regression_to_classes(predictions, n_bins=5):
-    # Convert continuous regression predictions into discrete classes.
+    # Convert continuous regression predictions into discrete classes
 
     # Create bins using quantiles for balanced distribution
     bin_edges = np.quantile(predictions, np.linspace(0, 1, n_bins + 1))
@@ -49,7 +49,7 @@ def convert_regression_to_classes(predictions, n_bins=5):
     # Assign predictions to bins
     class_predictions = np.digitize(predictions, bin_edges[1:-1])
 
-    # Create human-readable labels
+    # Create labels
     class_labels = {}
     for i in range(actual_n_bins):
         lower = bin_edges[i]
@@ -142,10 +142,8 @@ def run_tabular_analysis(config):
         start = config.get("subset_start", 0)
         end = config.get("subset_end", len(X_df))
         X_sample = X_df.iloc[start:end]
-        print(f"Using dataset subset [{start}:{end}]")
     else:
         X_sample = X_df
-        print("Using full dataset")
 
     # Compute SHAP values
     explainer, shap_values, X_df_aligned = compute_shap_values(model, X_sample)
@@ -188,13 +186,11 @@ def run_tabular_analysis(config):
         if is_classification:
             # Handle multi-output classification
             if is_multi_output:
-                print("\nModel predictions (Multi-output Classification):")
                 for output_idx in range(num_outputs):
                     output_name = output_labels.get(f"{output_idx}_name", f"Output {output_idx}")
                     output_preds = all_outputs[:, output_idx]
                     unique_classes, class_counts = np.unique(output_preds, return_counts=True)
 
-                    print(f"\n  {output_name}:")
                     for cls, cnt in zip(unique_classes, class_counts):
                         percentage = (cnt / len(output_preds)) * 100
                         # For multi-output classification, labels are stored as output_labels[output_idx][class]
@@ -202,26 +198,20 @@ def run_tabular_analysis(config):
                             class_label = output_labels[str(output_idx)].get(str(int(cls)), f"Class {cls}")
                         else:
                             class_label = f"Class {cls}"
-                        print(f"    - {class_label}: {cnt} samples ({percentage:.1f}%)")
             else:
                 # Single-output classification
                 unique_classes, class_counts = np.unique(preds_for_main, return_counts=True)
-                print("\nModel predictions (Classification):")
                 for cls, cnt in zip(unique_classes, class_counts):
                     percentage = (cnt / len(preds_for_main)) * 100
                     class_label = output_labels.get(str(int(cls)), f"Class {cls}")
-                    print(f"  - {class_label}: {cnt} samples ({percentage:.1f}%)")
 
         else:
             # Regression path
             if is_multi_output:
                 # Multi-output regression - no binning needed
-                print("\nModel predictions (Multi-output Regression):")
                 for i in range(num_outputs):
                     output_name = output_labels.get(str(i), f"Output {i}")
                     output_preds = all_outputs[:, i]
-                    print(
-                        f"  - {output_name}: min={output_preds.min():.2f}, max={output_preds.max():.2f}, mean={output_preds.mean():.2f}")
 
                 # For multi-output regression, we don't bin
                 original_preds = preds_for_main
@@ -275,7 +265,6 @@ def run_tabular_analysis(config):
     # Save results to Excel
     if save_excel:
         # For multi-output, we need to get SHAP values from the first output for the Excel
-        # (we'll add all outputs' predictions but only first output's SHAP for simplicity)
         if is_multi_output and not is_classification:
             # Get SHAP from first output
             first_shap = all_explainers[0].shap_values(X_df_aligned)
@@ -414,7 +403,6 @@ def run_tabular_analysis(config):
 
         except Exception as e:
             print(f"\nError generating notebook: {e}")
-            print("All plots are still available in the output directory.")
             import traceback
             traceback.print_exc()
     elif not generate_plots:

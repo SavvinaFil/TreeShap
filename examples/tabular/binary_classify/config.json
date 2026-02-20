@@ -1,0 +1,25 @@
+{
+  "analysis": "tabular",
+  "package": "sklearn",
+  "model_type": "decision_tree",
+  "model_path": "binary_classify_model.pkl",
+  "background_data_path": "",
+  "test_data_path": "",
+  "dataset_path": "binary_classify_dataset.csv",
+  "output_dir": "output",
+  "generate_plots": true,
+  "save_excel": true,
+  "dataset_scope": "whole",
+  "generate_notebook": true,
+  "feature_names": ["Age",
+    "Income per Year",
+    "Years of Employment"],
+  "output_labels": {
+    "0": "Loan Rejected",
+    "1":  "Loan Approved"},
+  "input_dim": "",
+  "hidden_size": "",
+  "look_back": "",
+  "look_ahead": "",
+  "explainer_type": ""
+}

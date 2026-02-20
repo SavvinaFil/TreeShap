@@ -228,14 +228,8 @@ TreeExplainer, the algorithm used in this analysis, provides:
     if model_info:
         classes_display = []
         for cls in model_info.get('classes', []):
-            # Try to treat cls as an index first
-            try:
-                idx_str = str(int(cls))
-                class_label = output_labels.get(idx_str, f"Class {cls}")
-                classes_display.append(f"{cls} ({class_label})")
-            except (ValueError, TypeError):
-
-                classes_display.append(str(cls))
+            class_label = output_labels.get(str(int(cls)), f"Class {cls}")
+            classes_display.append(f"{cls} ({class_label})")
 
         info_text = f"""
 ## Model Information
@@ -266,7 +260,7 @@ TreeExplainer, the algorithm used in this analysis, provides:
 """
     cells.append(create_markdown_cell(toc))
 
-    # FIXED: Multiple patterns to match both single-output and multi-output structures
+    # Multiple patterns to match both binary and multi-output structures
     plot_sections = [
         {
             'name': 'Feature Importance - Unified (All Classes/Outputs)',
@@ -275,12 +269,12 @@ TreeExplainer, the algorithm used in this analysis, provides:
             'type': 'bar',
             'description': 'Overall feature importance averaged across all classes/outputs, ranked by mean absolute SHAP value.',
             'is_interactive': False,
-            'recursive': False  # Only in root
+            'recursive': False
         },
         {
             'name': 'Feature Importance',
             'anchor': 'feature-importance',
-            'patterns': ['**/shap_bar.png', '**/shap_bar_*.png'],  # Match BOTH formats!
+            'patterns': ['**/shap_bar.png', '**/shap_bar_*.png'],
             'type': 'bar',
             'description': 'Overall feature importance ranked by mean absolute SHAP value.',
             'is_interactive': False,
@@ -289,7 +283,7 @@ TreeExplainer, the algorithm used in this analysis, provides:
         {
             'name': 'Beeswarm Plots',
             'anchor': 'beeswarm-plots',
-            'patterns': ['**/shap_beeswarm.png', '**/shap_beeswarm_*.png'],  # Match BOTH!
+            'patterns': ['**/shap_beeswarm.png', '**/shap_beeswarm_*.png'],
             'type': 'beeswarm',
             'description': 'Distribution of SHAP values showing feature impacts across all samples.',
             'is_interactive': False
@@ -297,7 +291,7 @@ TreeExplainer, the algorithm used in this analysis, provides:
         {
             'name': 'Violin Plots',
             'anchor': 'violin-plots',
-            'patterns': ['**/shap_violin.png', '**/shap_violin_*.png'],  # Match BOTH!
+            'patterns': ['**/shap_violin.png', '**/shap_violin_*.png'],
             'type': 'violin',
             'description': 'Density distribution of SHAP values for each feature.',
             'is_interactive': False
@@ -365,7 +359,7 @@ TreeExplainer, the algorithm used in this analysis, provides:
     ]
 
     for section in plot_sections:
-        # Handle multiple patterns - FIXED!
+        # Handle multiple patterns
         plot_files = []
 
         if 'patterns' in section:
@@ -431,7 +425,7 @@ Interactive {section['name'].lower()} are available in the output folder but not
 *Interactive plots provide the best experience when opened directly in a web browser.*
 """
             cells.append(create_markdown_cell(interactive_note))
-            continue  # Skip to next section, don't embed
+            continue
 
         # Embed images
         for plot_file in plot_files:
@@ -441,7 +435,7 @@ Interactive {section['name'].lower()} are available in the output folder but not
 
             # Extract meaningful title
             # For multi-output: "Power_Forecast/shap_bar.png" → "Power Forecast - Feature Importance"
-            # For single-output: "shap_bar_Loan_Approved.png" → "Loan Approved - Feature Importance"
+            # For binary: "shap_bar_Loan_Approved.png" → "Loan Approved - Feature Importance"
             parent_dir = os.path.basename(os.path.dirname(plot_file))
 
             if parent_dir and parent_dir != os.path.basename(plots_dir):
@@ -450,7 +444,7 @@ Interactive {section['name'].lower()} are available in the output folder but not
                 plot_type_name = filename.replace('shap_', '').replace('.png', '').replace('_', ' ').title()
                 title = f"{output_name} - {plot_type_name}"
             else:
-                # Single-output structure
+                # Binary structure
                 title = filename.replace('_', ' ').replace('.png', '').replace('.html', '').title()
 
             image_html = create_image_html(rel_path, title)
