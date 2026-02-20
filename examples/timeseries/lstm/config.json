@@ -7,7 +7,7 @@
   "test_data_path": "source/data/lstm_data_to_explain.pt",
   "dataset_path": "energy_forecasting_dataset.csv",
   "output_dir": "output/",
-  "save_excel": true,
+  "save_excel": false,
   "dataset_scope": "whole",
   "generate_notebook": true,
   "feature_names": ["PV", "ghi", "PV_lag_24", "PV_lag_168", 

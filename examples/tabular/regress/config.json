@@ -1,0 +1,31 @@
+{
+  "analysis": "tabular",
+  "package": "sklearn",
+  "model_type": "random_forest",
+  "model_path": "source/models/rf_regress.pkl",
+  "dataset_path": "source/data/rf_regress_dataset.csv",
+  "output_dir": "output/",
+  
+  "dataset_scope": "subset",
+  "subset_end": 200,
+  
+  "save_excel": true,
+  "generate_notebook": true,
+  
+  "feature_names": [
+    "Wind Speed",
+    "Temperature",
+    "Previous Power",
+    "Previous Load",
+    "Hour"
+  ],
+
+  "target_index": [0,1],
+  "output_labels": {
+    "0": "Power Forecast",
+    "1": "Load Forecast",
+    "2": "Frequency Deviation",
+    "3": "Voltage Level",
+    "4": "Reserve Requirement"
+  }
+}

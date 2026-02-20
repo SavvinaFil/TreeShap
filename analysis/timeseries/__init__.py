@@ -21,5 +21,8 @@ def run_timeseries_analysis(config):
     explainer.load_model()
     explainer.explain()
     
+    if config.get("save_excel"):
+        explainer.save_results_to_excel()
+    
     if config.get("generate_notebook"):
         explainer.plot_results()

@@ -1,0 +1,26 @@
+{
+  "analysis": "tabular",
+  "package": "sklearn",
+  "model_type": "random_forest",
+  "model_path": "source/models/rf_classify.pkl",
+  "dataset_path": "source/data/rf_classify_data.csv",
+  "output_dir": "output/",
+  
+  "dataset_scope": "subset",
+  "subset_end": 200,
+  
+  "save_excel": true,
+  "generate_notebook": true,
+  
+  "feature_names": [
+    "Age", 
+    "Income per Year", 
+    "Years of Employment"
+  ],
+
+  "target_index": 1,
+  "output_labels": {
+    "0": "Loan Denied",
+    "1": "Loan Approved"
+  }
+}

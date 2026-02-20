@@ -1,4 +1,4 @@
-from .tabular.tree_based import run_tabular_analysis
+from .tabular import run_tabular_analysis
 from .timeseries import run_timeseries_analysis
 
 ANALYSIS_ROUTER = {

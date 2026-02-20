@@ -1,0 +1,95 @@
+import os
+import pickle
+import numpy as np
+import pandas as pd
+import shap
+from datetime import datetime
+from .base import ExplainerBase
+from output.utils.report_gen import generate_notebook
+
+class RFExplainer(ExplainerBase):
+    def load_model(self):
+        model_path = self.get_path("model_path")
+        with open(model_path, "rb") as f:
+            self.model = pickle.load(f)
+        
+        self.is_multi_output = hasattr(self.model, "estimators_") and len(self.model.estimators_) > 1
+        self.is_classification = hasattr(self.model, "predict_proba")
+        print(f"Model loaded: {type(self.model).__name__}")
+
+    def explain(self):
+        # 1. Load Data
+        df = pd.read_csv(self.get_path("dataset_path"))
+        self.raw_data = df[self.feature_names] if self.feature_names else df
+        if self.config.get("dataset_scope") == "subset":
+            self.raw_data = self.raw_data.iloc[:self.config.get("subset_end", 100)]
+        
+        self.raw_data_values = self.raw_data.values
+        
+        # 2. Prepare Target List
+        targets = self.config.get("target_index", 0)
+        if isinstance(targets, int):
+            targets = [targets]
+        
+        self.all_shap_values = {} # Dictionary to store {target_idx: shap_array}
+
+        # 3. Enumerate and Explain
+        for idx in targets:
+            print(f"Explaining target index: {idx}...")
+            
+            # Extract sub-model for MultiOutput wrappers
+            if type(self.model).__name__ == "MultiOutputRegressor":
+                model_to_explain = self.model.estimators_[idx]
+            else:
+                model_to_explain = self.model
+
+            explainer = shap.TreeExplainer(model_to_explain)
+            shap_output = explainer.shap_values(self.raw_data)
+
+            # Handle dimensionality
+            if isinstance(shap_output, list):
+                # For classification, we usually want the SHAP for that specific class idx
+                self.all_shap_values[idx] = shap_output[idx]
+            elif shap_output.ndim == 3:
+                self.all_shap_values[idx] = shap_output[:, :, idx]
+            else:
+                self.all_shap_values[idx] = shap_output
+
+        # Compatibility for the notebook: set self.shap_values to the first one in the list
+        self.shap_values = self.all_shap_values[targets[0]]
+
+    def save_results_to_excel(self):
+        """Saves a multi-sheet Excel file, one sheet per target."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"shap_audit_{self.config['model_type']}_{timestamp}.xlsx"
+        output_path = os.path.join(self.output_dir, filename)
+
+        with pd.ExcelWriter(output_path) as writer:
+            for idx, shap_arr in self.all_shap_values.items():
+                target_name = self.config.get("output_labels", {}).get(str(idx), f"target_{idx}")
+                
+                # Get Preds
+                preds = self.model.predict(self.raw_data)
+                if preds.ndim > 1:
+                    preds = preds[:, idx]
+
+                df_features = self.raw_data.reset_index(drop=True)
+                df_preds = pd.DataFrame({"Model_Prediction": preds})
+                df_shap = pd.DataFrame(shap_arr, columns=[f"SHAP_{c}" for c in self.raw_data.columns])
+                
+                sheet_df = pd.concat([df_features, df_preds, df_shap], axis=1)
+                sheet_df.to_excel(writer, sheet_name=target_name[:31], index=False) # Excel limit 31 chars
+        
+        print(f"Multi-target Excel audit saved: {output_path}")
+
+    def plot_results(self):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nb_name = f"multi_report_{self.config['model_type']}_{timestamp}.ipynb"
+        nb_path = os.path.join(self.output_dir, nb_name)
+        
+        generate_notebook(
+        explainer_inst=self,
+        all_shap_values=self.all_shap_values, # The dict we built in explain()
+        raw_data=self.raw_data_values,
+        output_path=nb_path
+    )

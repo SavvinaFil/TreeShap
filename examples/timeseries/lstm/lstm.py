@@ -156,7 +156,6 @@ if __name__ == "__main__":
     processor = DataProcessor(CONFIG["look_back"])
     
     # Get the directory of the current script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = Path(__file__).resolve().parents[3]
     
     # Define the new paths
