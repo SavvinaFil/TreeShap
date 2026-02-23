@@ -26,6 +26,11 @@ data_save_path = data_dir / data_filename
 # --- 2. Data Generation (Keep as is) ---
 n_samples = 1000
 ages = np.random.randint(18, 70, size=n_samples)
+<<<<<<<< HEAD:examples/tabular/binary_classify/rf_classify.py
+========
+
+# Calculate the max years of employment per person (we suppose they start working after 18 years old or later)
+>>>>>>>> caa76b9a7fdbbb25b0308ce120787a259fd53de0:examples/tabular/binary_classify/binary_classify.py
 max_work_years = ages - 18
 years_of_employment = np.array([
     np.random.randint(0, max(1, max_years + 1))
@@ -58,17 +63,38 @@ df["Loan Approved"] = (
 df.to_csv(data_save_path, index=False)
 print(f"Dataset saved to: {data_save_path}")
 
+<<<<<<<< HEAD:examples/tabular/binary_classify/rf_classify.py
 # --- 4. Train Model ---
 features = ["Age", "Income per Year", "Years of Employment"]
+========
+# Save dataset
+dataset_path = "../../../binary_classify_dataset.csv"
+df.to_csv(dataset_path, index=False)
+print(f"\nDataset saved: {dataset_path}")
+
+# Train model
+features = [
+    "Age",
+    "Income per Year",
+    "Years of Employment"
+]
+
+>>>>>>>> caa76b9a7fdbbb25b0308ce120787a259fd53de0:examples/tabular/binary_classify/binary_classify.py
 X = df[features]
 y = df["Loan Approved"]
 
 model = RandomForestClassifier(n_estimators=50, max_depth=4, random_state=42)
 model.fit(X, y)
 
+<<<<<<<< HEAD:examples/tabular/binary_classify/rf_classify.py
 # --- 5. Save Model ---
 # Use the full path including the filename
 with open(model_save_path, "wb") as f:
+========
+# Save the model
+model_path = "../../../binary_classify_model.pkl"
+with open(model_path, "wb") as f:
+>>>>>>>> caa76b9a7fdbbb25b0308ce120787a259fd53de0:examples/tabular/binary_classify/binary_classify.py
     pickle.dump(model, f)
 
 print(f"Model saved to: {model_save_path}")

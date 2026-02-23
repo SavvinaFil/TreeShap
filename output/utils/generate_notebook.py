@@ -228,21 +228,16 @@ TreeExplainer, the algorithm used in this analysis, provides:
     if model_info:
         classes_display = []
         for cls in model_info.get('classes', []):
-            # Try to treat cls as an index first
-            try:
-                idx_str = str(int(cls))
-                class_label = output_labels.get(idx_str, f"Class {cls}")
-                classes_display.append(f"{cls} ({class_label})")
-            except (ValueError, TypeError):
-
-                classes_display.append(str(cls))
+            class_label = output_labels.get(str(int(cls)), f"Class {cls}")
+            classes_display.append(f"{cls} ({class_label})")
 
         info_text = f"""
 ## Model Information
 
 - **Model Type:** {model_info.get('model_type', 'N/A')}
+- **Task Type:** {model_info.get('task_type', 'N/A')}
 - **Number of Features:** {model_info.get('n_features', 'N/A')}
-- **Number of Classes:** {model_info.get('n_classes', 'N/A')}
+- **Number of Classes/Outputs:** {model_info.get('n_classes', model_info.get('n_outputs', 'N/A'))}
 - **Output Classes:** {', '.join(classes_display) if classes_display else 'N/A'}
 - **Total Samples Analyzed:** {model_info.get('n_samples', 'N/A')}
 """
@@ -265,28 +260,30 @@ TreeExplainer, the algorithm used in this analysis, provides:
 """
     cells.append(create_markdown_cell(toc))
 
+    # Multiple patterns to match both binary and multi-output structures
     plot_sections = [
         {
-            'name': 'Feature Importance - Unified (All Classes)',
+            'name': 'Feature Importance - Unified (All Classes/Outputs)',
             'anchor': 'unified-feature-importance',
-            'pattern': '**/shap_bar_unified.png',
+            'pattern': 'shap_bar_unified.png',
             'type': 'bar',
-            'description': 'Overall feature importance averaged across all classes, ranked by mean absolute SHAP value.',
-            'is_interactive': False
+            'description': 'Overall feature importance averaged across all classes/outputs, ranked by mean absolute SHAP value.',
+            'is_interactive': False,
+            'recursive': False
         },
         {
             'name': 'Feature Importance',
             'anchor': 'feature-importance',
-            'pattern': '**/shap_bar_*.png',
+            'patterns': ['**/shap_bar.png', '**/shap_bar_*.png'],
             'type': 'bar',
             'description': 'Overall feature importance ranked by mean absolute SHAP value.',
             'is_interactive': False,
-            'exclude_pattern': '**/shap_bar_unified.png'  # Exclude unified to avoid duplicate
+            'exclude_pattern': 'unified'
         },
         {
             'name': 'Beeswarm Plots',
             'anchor': 'beeswarm-plots',
-            'pattern': '**/shap_beeswarm_*.png',
+            'patterns': ['**/shap_beeswarm.png', '**/shap_beeswarm_*.png'],
             'type': 'beeswarm',
             'description': 'Distribution of SHAP values showing feature impacts across all samples.',
             'is_interactive': False
@@ -294,7 +291,7 @@ TreeExplainer, the algorithm used in this analysis, provides:
         {
             'name': 'Violin Plots',
             'anchor': 'violin-plots',
-            'pattern': '**/shap_violin_*.png',
+            'patterns': ['**/shap_violin.png', '**/shap_violin_*.png'],
             'type': 'violin',
             'description': 'Density distribution of SHAP values for each feature.',
             'is_interactive': False
@@ -310,10 +307,11 @@ TreeExplainer, the algorithm used in this analysis, provides:
         {
             'name': 'Decision Plots',
             'anchor': 'decision-plots',
-            'pattern': '**/shap_decision_*.png',
+            'patterns': ['**/shap_decision.png', '**/shap_decision_*.png'],
             'type': 'decision_map',
             'description': 'Visualization of prediction paths from base value to final prediction.',
-            'is_interactive': False
+            'is_interactive': False,
+            'exclude_pattern': 'interactive'
         },
         {
             'name': 'Interactive Decision Plots',
@@ -327,10 +325,11 @@ TreeExplainer, the algorithm used in this analysis, provides:
         {
             'name': 'SHAP Heatmaps',
             'anchor': 'heatmaps',
-            'pattern': '**/shap_heatmap_*.png',
+            'patterns': ['**/shap_heatmap.png', '**/shap_heatmap_*.png'],
             'type': 'heatmap',
             'description': 'Heatmap showing SHAP values across all samples and features.',
-            'is_interactive': False
+            'is_interactive': False,
+            'exclude_pattern': 'interactive'
         },
         {
             'name': 'Interactive Heatmaps',
@@ -350,22 +349,38 @@ TreeExplainer, the algorithm used in this analysis, provides:
             'is_interactive': False
         },
         {
-            'name': 'Waterfall Plots - Class Averages',
+            'name': 'Waterfall Plots - Class/Output Averages',
             'anchor': 'waterfall-mean',
             'pattern': '**/waterfall_plots/waterfall_mean_*.png',
             'type': 'waterfall',
-            'description': 'Average feature contributions per class.',
+            'description': 'Average feature contributions per class or output.',
             'is_interactive': False
         }
     ]
 
     for section in plot_sections:
-        plot_files = glob.glob(os.path.join(plots_dir, section['pattern']), recursive=True)
+        # Handle multiple patterns
+        plot_files = []
 
-        # **NEW: Exclude files matching exclude_pattern**
+        if 'patterns' in section:
+            # Multiple patterns - merge results
+            for pattern in section['patterns']:
+                files = glob.glob(os.path.join(plots_dir, pattern), recursive=True)
+                plot_files.extend(files)
+            # Remove duplicates
+            plot_files = list(set(plot_files))
+        elif 'pattern' in section:
+            # Single pattern
+            if section.get('recursive', True):
+                plot_files = glob.glob(os.path.join(plots_dir, section['pattern']), recursive=True)
+            else:
+                # Non-recursive - only root level
+                plot_files = glob.glob(os.path.join(plots_dir, section['pattern']), recursive=False)
+
+        # Exclude files matching exclude_pattern
         if section.get('exclude_pattern'):
-            exclude_files = set(glob.glob(os.path.join(plots_dir, section['exclude_pattern']), recursive=True))
-            plot_files = [f for f in plot_files if f not in exclude_files]
+            exclude_keyword = section['exclude_pattern']
+            plot_files = [f for f in plot_files if exclude_keyword not in os.path.basename(f)]
 
         if not plot_files:
             continue
@@ -385,7 +400,7 @@ TreeExplainer, the algorithm used in this analysis, provides:
         if explanation:
             cells.append(create_markdown_cell(explanation))
 
-        # **CHANGED: Skip interactive plots in notebook, just reference them**
+        # Skip interactive plots in notebook, just reference them
         if section.get('is_interactive', False):
             interactive_note = f"""
 ### Interactive Plots Available
@@ -394,7 +409,7 @@ Interactive {section['name'].lower()} are available in the output folder but not
 
 **To view interactive plots:**
 1. Navigate to the output folder: `{plots_dir}`
-2. Look for files matching pattern: `{section['pattern'].replace('**/', '')}`
+2. Look for files matching pattern: `{section.get('pattern', section.get('patterns', [''])[0]).replace('**/', '')}`
 3. Open the `.html` files in your web browser
 
 **Features of interactive plots:**
@@ -410,13 +425,27 @@ Interactive {section['name'].lower()} are available in the output folder but not
 *Interactive plots provide the best experience when opened directly in a web browser.*
 """
             cells.append(create_markdown_cell(interactive_note))
-            continue  # Skip to next section, don't embed
+            continue
 
+        # Embed images
         for plot_file in plot_files:
             rel_path = os.path.relpath(plot_file, plots_dir)
 
             filename = os.path.basename(plot_file)
-            title = filename.replace('_', ' ').replace('.png', '').replace('.html', '').title()
+
+            # Extract meaningful title
+            # For multi-output: "Power_Forecast/shap_bar.png" → "Power Forecast - Feature Importance"
+            # For binary: "shap_bar_Loan_Approved.png" → "Loan Approved - Feature Importance"
+            parent_dir = os.path.basename(os.path.dirname(plot_file))
+
+            if parent_dir and parent_dir != os.path.basename(plots_dir):
+                # Multi-output structure
+                output_name = parent_dir.replace('_', ' ')
+                plot_type_name = filename.replace('shap_', '').replace('.png', '').replace('_', ' ').title()
+                title = f"{output_name} - {plot_type_name}"
+            else:
+                # Binary structure
+                title = filename.replace('_', ' ').replace('.png', '').replace('.html', '').title()
 
             image_html = create_image_html(rel_path, title)
             cells.append(create_markdown_cell(image_html))
@@ -426,7 +455,7 @@ Interactive {section['name'].lower()} are available in the output folder but not
 
 ## Summary and Next Steps
 
-This report provides a comprehensive view of how your decision tree AI model makes predictions using SHAP values.
+This report provides a comprehensive view of how your AI model makes predictions using SHAP values.
 
 ### Key Takeaways:
 1. **Feature Importance**: Identify which features drive your model's decisions
@@ -438,7 +467,7 @@ This report provides a comprehensive view of how your decision tree AI model mak
 - Focus on the top important features shown in bar plots
 - Investigate unexpected patterns in dependence plots
 - Use waterfall plots to explain individual predictions to stakeholders
-- Compare decision paths between different classes using decision plots
+- Compare decision paths between different classes/outputs using decision plots
 - **Open the interactive HTML plots** in the output folder for full exploration capabilities
 
 ### For More Information:
@@ -447,7 +476,8 @@ This report provides a comprehensive view of how your decision tree AI model mak
 
 ---
 
-**Report Generated by Explainable AI Tool for Decision Trees**
+**Report Generated by Explainable AI Tool**  
+**Project: AI-EFFECT**
 """
     cells.append(create_markdown_cell(conclusion))
 
