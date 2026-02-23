@@ -35,7 +35,7 @@ This repository provides an automated pipeline to move from a trained model to a
 ├── examples/                   # Pre-configured JSON templates
 ├── main.py                     # Central entry point
 └── README.md
-
+```
 
 ## 🚀 Getting Started
 
@@ -67,6 +67,7 @@ Create a JSON file to define the analysis scope. This file tells the toolbox whe
   "save_excel": true,
   "generate_notebook": true
 }
+```
 </details>
 
 ### 3. Run the Toolbox
