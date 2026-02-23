@@ -101,7 +101,7 @@ You can find examples of the jupyter notebooks here:
 
 | Feature | **Single Output Regression** | **Binary Classification** | **Multioutput Regression** |
 | :--- | :--- | :--- | :--- |
-| **Example** | [LSTM Report](./output/explanation_lstm_gradient_20260220_143820.ipynb) | [RF Classify Report](./output/multi_report_random_forest_20260220_143844.ipynb) | [RF Regress Report](./output/multi_report_random_forest_20260220_143908.ipynb) |
+| **Example** | [LSTM Report](./output/report_lstm_20260223_154441.ipynb) | [RF Classify Report](./output/report_random_forest_20260223_160452.ipynb) | [RF Regress Report](./output/report_random_forest_20260223_160626.ipynb) |
 
 ---
 

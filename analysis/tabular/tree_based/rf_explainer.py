@@ -9,6 +9,8 @@ from output.utils.report_gen import generate_notebook
 
 class RFExplainer(ExplainerBase):
     def load_model(self):
+        self.config["explainer_type"] = "tree"
+        
         model_path = self.get_path("model_path")
         with open(model_path, "rb") as f:
             self.model = pickle.load(f)
@@ -83,8 +85,9 @@ class RFExplainer(ExplainerBase):
         print(f"Multi-target Excel audit saved: {output_path}")
 
     def plot_results(self):
+        
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nb_name = f"multi_report_{self.config['model_type']}_{timestamp}.ipynb"
+        nb_name = f"report_{self.config['model_type']}_{timestamp}.ipynb"
         nb_path = os.path.join(self.output_dir, nb_name)
         
         generate_notebook(

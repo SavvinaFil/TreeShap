@@ -5,8 +5,8 @@ import argparse
 
 """
 python main.py --config examples/timeseries/lstm/config.json
-python main.py --config examples/tabular/classify/config.json
-python main.py --config examples/tabular/regress/config.json
+python main.py --config examples/tabular/binary_classify/config.json
+python main.py --config examples/tabular/multioutput_regress/config.json
 
 """
 

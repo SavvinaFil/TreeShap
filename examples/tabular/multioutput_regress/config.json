@@ -20,7 +20,7 @@
     "Hour"
   ],
 
-  "target_index": [0,1],
+  "target_index": [0,1,2,3,4],
   "output_labels": {
     "0": "Power Forecast",
     "1": "Load Forecast",

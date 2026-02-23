@@ -100,8 +100,8 @@ class LSTMExplainer(TimeseriesExplainerBase):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
         # 2. Create the path
-        explainer_type = self.config['explainer_type']
-        nb_name = f"explanation_lstm_{explainer_type}_{timestamp}.ipynb"
+        # explainer_type = self.config['explainer_type']
+        nb_name = f"report_lstm_{timestamp}.ipynb"
         nb_path = os.path.join(output_dir, nb_name)
         
         # 3. Call the updated utility
