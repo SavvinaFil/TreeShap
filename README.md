@@ -73,14 +73,20 @@ Create a JSON file to define the analysis scope. This file tells the toolbox whe
 ### 3. Run the Toolbox
 Execute the analysis via the command line using the `--config` flag:
 
-# Run Time-Series Analysis
+* Run Time-Series Analysis
+```bash
 python main.py --config examples/timeseries/lstm/config.json
+```
 
-# Run Tabular Classification
+* Run Tabular Classification
+```bash
 python main.py --config examples/tabular/classify/config.json
+```
 
-# Run Tabular Regression
+* Run Tabular Regression
+```bash
 python main.py --config examples/tabular/regress/config.json
+```
 
 ---
 
@@ -90,6 +96,11 @@ The toolbox generates two primary artifacts in the output/ folder:
 
 1. SHAP Audit (.xlsx): A multi-sheet spreadsheet containing original feature values, model predictions, and SHAP values for every row. Each target index gets its own sheet.
 2. Interpretation Report (.ipynb): A fully executed Jupyter Notebook containing Summary Plots, Feature Importance Bar Charts, and Temporal Analysis (for LSTMs).
+
+You can find examples of the jupyter notebooks here:
+
+|   | **Single Output Regression**  | **Binary Classification** | **Multioutput Regression** |
+| **Example** | [LSTM report](./output/explanation_lstm_gradient_20260220_143820.ipynb) | [RF Classify Report](./output/multi_report_random_forrest_20260220_143844.ipynb) | [RF Regress Report](./output/multi_report_random_forrest_20260220_143908.ipynb) |
 
 ---
 
