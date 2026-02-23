@@ -1,7 +1,6 @@
 {
   "analysis": "tabular",
   "package": "sklearn",
-<<<<<<< HEAD
   "model_type": "random_forest",
   "model_path": "source/models/rf_regress.pkl",
   "dataset_path": "source/data/rf_regress_dataset.csv",
@@ -22,37 +21,11 @@
   ],
 
   "target_index": [0,1],
-=======
-  "model_type": "decision_tree",
-  "model_path": "multioutput_regress_model.pkl",
-  "background_data_path": "",
-  "test_data_path": "",
-  "dataset_path": "multioutput_regress_dataset.csv",
-  "output_dir": "output",
-  "generate_plots": true,
-  "save_excel": true,
-  "dataset_scope": "whole",
-  "generate_notebook": true,
-  "feature_names": ["Wind Speed",
-    "Temperature",
-    "Previous Power",
-    "Previous Load",
-    "Hour"],
->>>>>>> caa76b9a7fdbbb25b0308ce120787a259fd53de0
   "output_labels": {
     "0": "Power Forecast",
     "1": "Load Forecast",
     "2": "Frequency Deviation",
     "3": "Voltage Level",
-<<<<<<< HEAD
     "4": "Reserve Requirement"
   }
-=======
-    "4": "Reserve Requirement"},
-  "input_dim": "",
-  "hidden_size": "",
-  "look_back": "",
-  "look_ahead": "",
-  "explainer_type": ""
->>>>>>> caa76b9a7fdbbb25b0308ce120787a259fd53de0
 }
