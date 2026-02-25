@@ -1,371 +1,81 @@
-# Model-Agnostic Explainability Analysis for AI models
+## 📄 Configuration & Data Flow
 
-This document describes the **architecture, design principles
-and implementation** of the TreeShap explainability framework. It provides the theoretical foundation and system design for understanding how SHAP analysis is performed on tree-based models.
+To ensure the toolbox operates correctly, your directory structure should mirror the paths defined in your `config.json`. 
 
+### 1. Storage & Paths
+* **Model Storage (`model_path`)**: Your trained PyTorch weights (`.pth`) should be stored in `source/models/`. This allows the explainer to reload the architecture and weights before performing the analysis.
+* **Data (`background_data_path` & `test_data_path`)**: Storing these as pre-processed subsets (separate from the raw dataset) ensures that the explainer uses the exact same normalization and windowing as your training pipeline.
+* **Output Directory (`output_dir`)**: All generated SHAP plots, summary statistics, and optional reports will be saved here.
 
-## 1. Overview
-
-This project provides a modular framework for analyzing machine learning models 
-(Decision Trees, Random Forests, timeseries) using SHAP explainability.
-
-It supports:
-
-- Classification
-- Regression
-- Multi-output Regression
-- Automated SHAP analysis
-- Plot generation
-- Excel export
-- Jupyter notebooks
-
-The architecture is designed to be:
-- Modular
-- Extensible
-- Config-driven
-- Separated into logical layers
-
----
-
-## 2. System Architecture
-
-The system follows a layered modular architecture:
-
+**Recommended Structure:**
+```text
+project_root/
+├── energy_forecasting_dataset.csv  # Raw Data
+├── source/
+│   ├── models/
+│   │   └── lstm_model.pth          # Trained Model
+│   └── data/
+│       ├── background_data.csv     # Reference set
+│       └── data_to_explain.csv     # Target samples
+└── output/                         # Resulting SHAP plots
 ```
-User (config.json)
-        │
-        ▼
-ANALYSIS_ROUTER
-        │
-        ▼
-Selected Analysis Module
-        │
-        ├── Model Loading
-        ├── Dataset Loading
-        ├── Validation
-        ├── Prediction
-        ├── SHAP Computation
-        ├── Visualization
-        ├── Excel Export
-        ├── Plots
-        └── Notebook Generation
-```
+---
 
 ---
 
-## 3. Project Structure
+## 🧪 Background vs. Test Data
 
-### 3.1 Data & Model Creation
+In SHAP analysis, there is a critical distinction between the **Background Data** and the **Data to Explain**.
 
-- `create_example.py`  
-  Generates synthetic classification dataset and trains a RandomForestClassifier.
+### Background Data (`background_data_path`)
+* **What it is:** A representative subset of your training data.
+* **What it’s used for:** SHAP explains predictions by comparing the current input to a "baseline." The background data calculates this baseline by "integrating out" features—effectively replacing a feature with values from the background set to measure the impact on the prediction.
+* **Why it matters:** In energy forecasting, your background data must represent "typical" behavior. If your background set lacks diversity (e.g., only includes nighttime samples), your daytime explanations will be physically nonsensical.
 
-- `create_example_2.py`  
-  Generates synthetic multi-output regression dataset for energy forecasting and trains a MultiOutput RandomForestRegressor.
-
-These are example pipelines for demonstration.
-
----
-
-### 3.2 Core Analysis Layer
-
-#### `analysis/__init__.py`
-
-Acts as a router for different analysis types.
-
-```python
-ANALYSIS_ROUTER = {
-    "tabular": run_tabular_analysis,
-    "timeseries": run_timeseries_analysis
-}
-```
-
-The router dynamically selects the appropriate analysis pipeline 
-based on the `analysis_type` specified in `config.json`
----
-
-### 3.3.1 Tabular Analysis Module
-
-Located in:
-
-```
-analysis/tabular/tree_based/
-```
-
-Main entry point:
-- `run_tabular_analysis(config)`
-
-Responsibilities:
-- Load model
-- Validate model type
-- Load dataset
-- Compute SHAP values
-- Generate plots
-- Save results
-- Generate notebook
-
-### 3.3.2 Time-Series Analysis Module
-
-Located in:
-
-```
-analysis/timeseries/
-```
-
-Main entry point:
-- `run_timeseries_analysis(config)`
-
-Responsibilities:
-- Load time-series model
-- Load sequential dataset
-- Handle temporal windowing
-- Generate predictions
-- Compute SHAP explanations (model-dependent)
-- Produce time-aware visualizations
-- Export results and notebook
-
-The time-series module is designed to support deep learning or sequential models
-while maintaining compatibility with the same reporting system used for tabular models.
+### Data to Explain (`test_data_path`)
+* **What it is:** The specific samples (e.g., a high-demand day or a sudden solar drop) that you want to analyze.
+* **What it’s used for:** This is the input that the explainer deconstructs to show which features (like `ghi` or `PV_lag_24`) were the primary drivers for that specific forecast.
 
 ---
 
-**Responsibilities:**
-1. **Model Loading & Validation:**
-   - Loads `.pkl` file
-   - Checks feature count compatibility
+### ⚠️ A Note on Background Data & Explainer Types
 
-2. **Dataset Processing:**
-   - Loads CSV/Excel files
-   - Applies feature subset
-   - Handles subset slicing
+The role of the background data changes significantly depending on your `explainer_type`:
 
-3. **SHAP Computation:**
-   - Computes exact Shapley values
-   - Handles multi-class/multi-output cases
+#### The Kernel Explainer (The Primary User)
+For `explainer_type: "kernel"`, the background data is **mandatory**. 
+* **The Mechanism:** KernelSHAP is "black-box"; it only observes inputs and outputs. To "ignore" a feature, it replaces it with samples from the **Background Data**.
+* **The Impact:** Feature importance is measured *relative* to this set. If your background data only contains summer months, the explainer cannot accurately attribute importance for winter predictions.
 
-4. **Output Generation:**
-   - Orchestrates plot creation
-   - Exports Excel file
-   - Generates Jupyter notebook
+#### Tree and Gradient Explainers (The Optimized Users)
+* **Tree Explainer (`rf_regressor`, `rf_classifier`):** Uses the internal tree structure. It is significantly less sensitive to the background set size but still uses it to define the "expected value" of the model.
+* **Gradient/Deep Explainer (`lstm`):** Uses model gradients. The background data (or "reference") serves as the starting point for the integration path. For energy data, a common baseline is the average "clear sky" or "zero-input" profile.
+
+
 
 ---
 
-#### `output/results.py`
-
-**Main Functions:**
-
-1. `compute_shap_values()`
-   - Creates TreeExplainer
-   - Returns: explainer, shap_values, aligned_df
-
-2. `plot_shap_values()`
-   - Generates all visualization types
-   - Handles per-class and unified plots
-
-3. `save_results_to_excel()`
-   - Exports features + predictions + SHAP values
-   - Handles both classification and regression
-
-**Plot Types Generated:**
-- Beeswarm, Bar, Violin (global importance)
-- Dependence (feature interactions)
-- Decision (prediction paths)
-- Heatmap (sample overview)
-- Waterfall (individual explanations)
+### Best Practices for Selecting Background Data
+1. **Size:** 100–500 samples is usually the "sweet spot" between accuracy and computation time.
+2. **Diversity:** Use a **K-Means summarized** version of your training set rather than the first 100 rows to ensure you capture the full range of solar/wind variability.
+3. **Consistency:** The background data must have the exact same `normalization` and `look_back` windowing as your `test_data`.
 
 ---
 
-### 3.4 Model & Dataset Handling
+## ⚙️ Configuration Parameter Breakdown
 
-#### `tree_input.py` (Tabular)
-
-Provides:
-
-- `load_tree(model_path)`
-- `load_dataset(feature_names, path_override)`
-
-Supports:
-- CSV
-- Excel (.xlsx, .xls)
+| Parameter | Purpose |
+| :--- | :--- |
+| `analysis` | The class of problem, such as `timeseries` for forecasting with LSTMs. |
+| `explainer_type` | Specifies the algorithm (e.g., `gradient` for NNs, `tree` for Random Forest, `kernel` for black-box). |
+| `look_back` | The temporal horizon; e.g., `6` means the explainer audits the 6 previous time steps. |
+| `input_dim` | The number of features per time step. |
+| `dataset_scope` | Usually set to `whole` to ensure scaling context is maintained across the entire project. |
+| `generate_notebook` | If `true`, exports a `.ipynb` file for interactive post-run analysis. |
 
 ---
 
-### 3.5 SHAP Processing & Output
-
-Located in:
-
-```
-output/results.py
-```
-
-Key responsibilities:
-
-- Compute SHAP values
-- Display SHAP values
-- Save results to Excel
-- Generate:
-  - Beeswarm plots
-  - Bar plots
-  - Violin plots
-  - Dependence plots
-  - Decision Map plots
-  - Heatmaps
-  - Waterfall plots
-
-Supports:
-- Binary classification
-- Multi-class classification
-- Regression
-- Multi-output regression
-
----
-
-## 4. Execution Flow (Tabular Analysis)
-
-1. User defines `config.json`
-2. Router selects analysis module (tabular or timeseries)
-3. Model is loaded
-4. Model is validated
-5. Dataset is loaded
-6. Optional dataset slicing is applied
-7. SHAP values are computed
-8. Predictions are generated
-9. Results exported:
-   - Console output
-   - Excel file
-   - Plots
-   - Jupyter notebook
-
----
-
-## 5. Design Principles
-
-### ✔ Configuration Driven
-All behavior is controlled by `config.json`.
-
-### ✔ Model Agnostic (Tree-Based)
-Supports:
-- sklearn
-- XGBoost
-- PyTorch
-
-### ✔ Safe for Multi-Output Models
-Automatically unwraps base estimators where required.
-
-### ✔ Reproducible
-Uses fixed random seeds in examples.
-
-### ✔ Extensible
-New analysis modules can be added via `ANALYSIS_ROUTER`.
-
----
-
-## 6. Supported Model Types
-
-| Type | Supported |
-|------|-----------|
-| DecisionTreeClassifier | ✅ |
-| RandomForestClassifier | ✅ |
-| DecisionTreeRegressor | ✅ |
-| RandomForestRegressor | ✅ |
-| GradientBoosting | ✅ |
-| XGBoost | ✅ |
-| MultiOutputRegressor | ✅ |
-| MultiOutputClassifier | ✅ |
-| Time-Series Models | ✅ |
-
----
-
-## 7. Output Artifacts
-
-The system can generate:
-
-- SHAP value console summary
-- Excel file with:
-  - Features
-  - Predictions
-  - SHAP values
-- Structured plot directory
-- Auto-generated Jupyter notebook
-
----
-
-## 8. Configuration Specification
-
-###  Required Fields
-
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| `analysis` | string | Analysis type | `"tabular"` or `"timeseries"` |
-| `package` | string | ML library | `"sklearn"`, `"xgboost"` |
-| `model_type` | string | Model architecture | `"decision_tree"`, `"random_forest"`, `"gradient_boosting"` |
-| `model_path` | string | Path to `.pkl` file | `"models/rf_model.pkl"` |
-| `dataset_path` | string | Path to data (.csv/.xlsx) | `"data/features.csv"` |
-| `feature_names` | array | **Ordered** feature list | `["Age", "Income", "Years"]` |
-
-
-### Optional Fields
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `output_dir` | `"output"` | Results directory |
-| `output_labels` | Auto | Class/output names |
-| `generate_plots` | `true` | Create visualizations |
-| `save_excel` | `true` | Export to Excel |
-| `dataset_scope` | `"whole"` | Use `"subset"` for large data |
-| `regression_bins` | `5` | Bins for regression viz |
-
-### 8.3 Critical Rules
----
-
-## 9. Validation & Error Handling
-
-### 9.1 Pre-Execution Checks
-
-The system validates before SHAP computation:
-```python
-# 1. File Existence
-assert os.path.exists(model_path), "Model file not found"
-assert os.path.exists(dataset_path), "Dataset file not found"
-
-# 2. Model Compatibility
-assert isinstance(model, SUPPORTED_MODELS), "Unsupported model type"
-
-# 3. Feature Consistency
-assert len(feature_names) == model.n_features_in_, "Feature count mismatch"
-
-# 4. Dataset Validity
-assert all(f in dataset.columns for f in feature_names), "Missing features"
-
-# 5. Subset Bounds (if applicable)
-if dataset_scope == "subset":
-    assert 0 <= subset_start < subset_end <= len(dataset)
-```
-
-### 9.2 Runtime Warnings
-
-**Model Type Mismatch:**
-```
-WARNING: Expected random_forest, but got DecisionTreeClassifier
-```
-→ Analysis proceeds with actual model type
-
-**Missing Output Labels:**
-```
-INFO: No output_labels provided. Using defaults: Class 0, Class 1, ...
-```
-→ Auto-generated labels used
-
----
-
-## 9. Summary
-
-This framework provides a production-ready explainability pipeline 
-for both tabular and time-series machine learning models with automated reporting.
-
-It bridges:
-
-Model → SHAP → Visualization → Reporting
-
-In a fully configurable and extensible architecture.
-
+## 📊 Feature & Label Setup
+The toolbox maps raw tensor dimensions back to human-readable names:
+* **`feature_names`**: Maps the input dimensions (e.g., Physics: `ghi`, Temporal: `hour_sin`, Historical: `PV_lag_24`).
+* **`output_labels`**: Defines the target variable being explained (e.g., `PV` power production).
