@@ -66,8 +66,6 @@ For `explainer_type: "kernel"`, the background data is **mandatory**.
 | :--- | :--- |
 | `analysis` | The class of problem, such as `timeseries` for forecasting with LSTMs. |
 | `explainer_type` | Specifies the algorithm (e.g., `gradient` for NNs, `tree` for Random Forest, `kernel` for black-box). |
-| `look_back` | The temporal horizon; e.g., `6` means the explainer audits the 6 previous time steps. |
-| `input_dim` | The number of features per time step. |
 | `dataset_scope` | Usually set to `whole` to ensure scaling context is maintained across the entire project. |
 | `generate_notebook` | If `true`, exports a `.ipynb` file for interactive post-run analysis. |
 

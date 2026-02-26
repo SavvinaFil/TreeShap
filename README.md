@@ -113,10 +113,10 @@ For detailed guides and tutorials, refer to our documentation suite:
 ```text
 /
 ├── analysis/
-│   ├── tabular/                # Logic for CSV-based data (RF, XGB, etc.)
+│   ├── tabular/                # Logic for models trained with tabular data 
 │   │   ├── treebased/          # Tree-specific explainers
 │   │   └── __init__.py         # Tabular manager and registry
-│   └── timeseries/             # Logic for 3D temporal data (LSTM, GRU)
+│   └── timeseries/             # Logic timeseries models
 │       └── lstm_explainer.py   # PyTorch-specific SHAP implementation
 │
 ├── output/                     # Generated Reports and Audit logs
