@@ -1,0 +1,56 @@
+{
+  "analysis": "tabular",
+  "package": "sklearn",
+  "model_type": "random_forest",
+  "model_path": "source/models/multioutput_classify.pkl",
+  "dataset_path": "source/data/multioutput_classify.csv",
+  "output_dir": "output/",
+
+  "dataset_scope": "whole",
+
+  "save_excel": true,
+  "generate_notebook": true,
+
+  "feature_names": [
+    "Wind Speed",
+    "Solar Irradiance",
+    "Previous Generation",
+    "Previous Load",
+    "Day Ahead Price",
+    "Hour"
+  ],
+
+  "target_index": [0, 1, 2, 3, 4, 5],
+  "output_labels": {
+    "0": {
+      "0": "OFF",
+      "1": "ON"
+    },
+    "1": {
+      "0": "OFF",
+      "1": "ON"
+    },
+    "2": {
+      "0": "OFF",
+      "1": "ON"
+    },
+    "3": {
+      "0": "OFF",
+      "1": "ON"
+    },
+    "4": {
+      "0": "OFF",
+      "1": "ON"
+    },
+    "5": {
+      "0": "OFF",
+      "1": "ON"
+    },
+    "0_name": "Generator 1",
+    "1_name": "Generator 2",
+    "2_name": "Generator 3",
+    "3_name": "Generator 4",
+    "4_name": "Generator 5",
+    "5_name": "Generator 6"
+  }
+}
