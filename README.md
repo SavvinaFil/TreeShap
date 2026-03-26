@@ -146,3 +146,33 @@ For detailed guides and tutorials, refer to our documentation suite:
 ├── main.py                     # Central entry point
 └── README.md
 ```
+
+## 🤝 Contributing
+
+We welcome contributions to the **Neural Network Verification Toolbox**! Whether you are fixing a bug, adding a new problem class, or improving documentation:
+
+1. **Fork** the repository.
+2. Create a **Feature Branch** (`git checkout -b feature/AmazingFeature`).
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`).
+4. **Push** to the branch (`git push origin feature/AmazingFeature`).
+5. Open a **Pull Request**.
+
+Please ensure your code follows the existing project structure and includes necessary tests.
+
+## 📧 Contact & Support
+
+For questions, bug reports, or collaboration inquiries, please reach out to the project maintainers:
+
+* **Main Contact:** Bastien Giraud - bagir@dtu.dk
+* **Supervision:** Johanna Vorwerk, Spyros Chatzivasileiadis
+
+
+---
+
+## 📚 References & Acknowledgments
+
+This toolbox is built upon the following foundational research and libraries:
+
+* **Explainability (SHAP):** Lundberg and Lee (2017) for interpreting model predictions and identifying key input features.
+
+
