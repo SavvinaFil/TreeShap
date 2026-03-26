@@ -1,13 +1,13 @@
 # 🛡️ AI Explainability Analysis Toolbox
 
-Neural Networks excel at navigating the complexities of the energy transition, but their decisions often remain "black boxes." This toolbox strips away the mystery by providing a standardized, model-agnostic framework for AI explainability using SHAP. It transforms complex model behavior into auditable, physically grounded insights—ensuring that when an AI makes a high-stakes decision, you can trace it back to the fundamental drivers of the energy system.
+Various AI models excel at navigating the complexities of the energy transition, but their decisions often remain "black boxes." This toolbox strips away the mystery by providing a standardized, model-agnostic framework for AI explainability using SHAP. It transforms complex model behavior into auditable, physically grounded insights—ensuring that when an AI makes a high-stakes decision, you can trace it back to the fundamental drivers of the energy system.
 
 ---
 
 ## 🧠 Explainability Analysis in a Nutshell
 
 ### What are Shapley Values?
-Derived from cooperative game theory, **Shapley values** provide a mathematically rigorous way to distribute the "payout" (the model's prediction) among the "players" (the input features). In the context of Machine Learning, a Shapley value represents the **average marginal contribution** of a feature toward a specific prediction, accounting for all possible combinations of other features.
+Derived from cooperative game theory, **Shapley values** provide a mathematically rigorous way to distribute the "payout" (the model's prediction) among the "players" (the input features). In the context of Machine Learning, a Shapley value represents the **average marginal contribution** of a feature toward a specific prediction, accounting for all possible combinations of other features. For a detailed explanation of the theory, please visit [Explainability Theory](./docs/theory.md).
 
 ---
 
@@ -23,13 +23,25 @@ In the energy sector, knowing *that* a model predicted a price spike or a solar 
 
 ---
 
+## 🛠️ Installation & Setup
+
+To run this project, we recommend using [Conda](https://docs.anaconda.com/free/anaconda/install/index.html) to manage your dependencies and avoid version conflicts.
+
+### Create the Environment
+First, clone the repository and navigate into the folder. Then, create the `shap_aie` environment:
+
+```bash
+# Using the environment.yml (Recommended for Conda users)
+conda env create -f environment.yml
+```
+
 
 ## ⚡ Quickstart
 
 ### 1. Prepare your Assets
 Place your trained model and the dataset you want to explain in the `source/` directory:
 * **models:** place your trained AI agent in the `models/` folder.
-* **data:** place your data in the `data/` folder.
+* **data:** place your data in the `data/` folder. See the [Configuration Guide](./docs/configuration.md) what types of data you need to provide, depending on the type of model you're analyzing, and in what format.
 
 ### 2. Configure your Analysis
 Create a JSON file to define the analysis scope. This file tells the toolbox where your files are and how to interpret the outputs.
@@ -159,6 +171,6 @@ For questions, bug reports, or collaboration inquiries, please reach out to the 
 
 This toolbox is built upon the following foundational research and libraries:
 
-* **Explainability (SHAP):** Lundberg and Lee (2017) for interpreting model predictions and identifying key input features.
+* **Explainability (SHAP):** S. M. Lundberg and S.-I. Lee, "A unified approach to interpreting model predictions," *Advances in Neural Information Processing Systems*, vol. 30, pp. 4765–4774, 2017. [Link to Paper](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html)
 
 

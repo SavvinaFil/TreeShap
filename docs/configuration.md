@@ -21,35 +21,34 @@ project_root/
 ```
 ---
 
----
 
-## 🧪 Background vs. Test Data
+## 🧪 SHAP Data Configuration: Background vs. Test Data
 
-In SHAP analysis, there is a critical distinction between the **Background Data** and the **Data to Explain**.
+The toolbox requires one or two distinct datasets. The **Background Data** defines the "starting point" (the reference), while the **Test Data** defines the "destination" (the specific event you are explaining).
 
-### Background Data (`background_data_path`)
-* **What it is:** A representative subset of your training data.
-* **What it’s used for:** SHAP explains predictions by comparing the current input to a "baseline." The background data calculates this baseline by "integrating out" features—effectively replacing a feature with values from the background set to measure the impact on the prediction.
-* **Why it matters:** In energy forecasting, your background data must represent "typical" behavior. If your background set lacks diversity (e.g., only includes nighttime samples), your daytime explanations will be physically nonsensical.
-
-### Data to Explain (`test_data_path`)
-* **What it is:** The specific samples (e.g., a high-demand day or a sudden solar drop) that you want to analyze.
-* **What it’s used for:** This is the input that the explainer deconstructs to show which features (like `ghi` or `PV_lag_24`) were the primary drivers for that specific forecast.
+| Dataset | Role | Context |
+| :--- | :--- | :--- |
+| **Background** (`background_data_path`) | The **Reference Baseline**. Used to "ignore" features and calculate the model's expected value. | Must represent the "physical envelope" (e.g., typical seasonal/diurnal profiles). |
+| **Test** (`test_data_path`) | The **Target Samples**. The specific instances (e.g., a sudden solar drop) to be deconstructed. | Identifying which features (e.g., `PV_lag_24`) drove a specific safety violation. |
 
 ---
 
-### ⚠️ A Note on Background Data & Explainer Types
+### ⚠️ Explainer Logic & Background Dependencies
 
-The role of the background data changes significantly depending on your `explainer_type`:
+The requirement for background data shifts based on your chosen `explainer_type`:
 
-#### The Kernel Explainer (The Primary User)
-For `explainer_type: "kernel"`, the background data is **mandatory**. 
-* **The Mechanism:** KernelSHAP is "black-box"; it only observes inputs and outputs. To "ignore" a feature, it replaces it with samples from the **Background Data**.
-* **The Impact:** Feature importance is measured *relative* to this set. If your background data only contains summer months, the explainer cannot accurately attribute importance for winter predictions.
+#### 1. Black-Box (KernelSHAP)
+* **Status:** **Mandatory**.
+* **Mechanism:** Since the model is a "black box," the explainer must physically replace features with samples from the **Background Set** to measure impact. 
+* **Risk:** If the background set lacks diversity (e.g., nighttime only), daytime explanations will be physically nonsensical.
 
-#### Tree and Gradient Explainers (The Optimized Users)
-* **Tree Explainer (`rf_regressor`, `rf_classifier`):** Uses the internal tree structure. It is significantly less sensitive to the background set size but still uses it to define the "expected value" of the model.
-* **Gradient/Deep Explainer (`lstm`):** Uses model gradients. The background data (or "reference") serves as the starting point for the integration path. For energy data, a common baseline is the average "clear sky" or "zero-input" profile.
+#### 2. Model-Specific (GradientSHAP)
+* **Status:** **Required** (as a reference distribution).
+* **Mechanism:** Used as the "starting point" for path integration. For **Neural Networks** (LSTMs, MLPs), the explainer calculates how the gradient changes as you move from the background average to the test sample.
+
+#### 3. Tree-Based (TreeSHAP)
+* **Status:** **Optional/Optimized**.
+* **Mechanism:** TreeSHAP can use the internal tree structure (node sample counts) to define the baseline. It is the most robust against small background sets but still benefits from a representative sample to align with physical reality.
 
 
 
@@ -79,3 +78,17 @@ For `explainer_type: "kernel"`, the background data is **mandatory**.
 The toolbox maps raw tensor dimensions back to human-readable names:
 * **`feature_names`**: Maps the input dimensions (e.g., Physics: `ghi`, Temporal: `hour_sin`, Historical: `PV_lag_24`).
 * **`output_labels`**: Defines the target variable being explained (e.g., `PV` power production).
+
+
+### 📂 Model & Data Requirements
+
+Please provide files in the following formats:
+
+| Surrogate Type | Model Format | Data Format | Library Basis |
+| :--- | :--- | :--- | :--- |
+| **LSTM / Neural Networks** | `.pt` (PyTorch) | `.pt` (Tensors) | `torch`|
+| **Tree-Based Models** | `.pkl` (Pickle) | `.csv` (Table) | `scikit-learn`, `XGBoost` |
+
+> **Note:** For LSTM models, ensure the `.pt` data follows the $(Batch, Seq, Feature)$ dimensionality. For Tree-based models, the `.csv` headers must exactly match the feature names used during the initial training phase.
+
+

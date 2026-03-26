@@ -1,6 +1,6 @@
 # 📑 Mathematical Foundation: Shapley Values
 
-The core of this toolbox is based on **Shapley Additive Explanations (SHAP)**, which applies a game-theoretic approach to model transparency. The goal is to assign each feature a value that represents its contribution to the change in the model output from the baseline (average) value.
+The core of this toolbox is based on **Shapley Additive Explanations (SHAP)**, which applies a game-theoretic approach to model transparency. The goal is to assign each feature a value that represents its contribution to the change in the model output from the baseline (average) value. This toolbox uses the python package called SHAP, designed by Lundberg et al.
 
 ### The Shapley Equation
 The contribution of a feature $i$ is defined by the following formula:
@@ -43,3 +43,6 @@ In high-stakes energy applications—such as **reserve bidding** or **grid conge
 They allow operators to understand why *this specific hour* had a high price forecast or a solar drop, identifying whether it was driven by low wind speeds, a specific plant outage, or unexpected demand shifts. SHAP enables the deployment of AI in regulated, safety-critical environments.
 
 
+## References
+
+1. S. M. Lundberg and S.-I. Lee, "A unified approach to interpreting model predictions," *Advances in Neural Information Processing Systems*, vol. 30, pp. 4765–4774, 2017. [Link to Paper](https://proceedings.neurips.cc/paper/2017/hash/8a20a8621978632d76c43dfd28b67767-Abstract.html)
