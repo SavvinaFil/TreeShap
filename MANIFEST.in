@@ -1,0 +1,24 @@
+# Files to ship in the source distribution (sdist)
+include README.md
+include LICENSE
+include pyproject.toml
+include AI_explainability.proto
+include config.json
+recursive-include docs *.md
+recursive-include analysis *.py
+recursive-include output *.py
+
+# Don't ship heavy input assets, generated artefacts, or tooling caches
+prune source
+prune examples
+prune output/__pycache__
+recursive-exclude output *.ipynb
+recursive-exclude output *.xlsx
+recursive-exclude output *.csv
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude *.pkl
+global-exclude *.pt
+global-exclude *.pth
+global-exclude .DS_Store
+global-exclude *.so

@@ -25,14 +25,48 @@ In the energy sector, knowing *that* a model predicted a price spike or a solar 
 
 ## 🛠️ Installation & Setup
 
-To run this project, we recommend using [Conda](https://docs.anaconda.com/free/anaconda/install/index.html) to manage your dependencies and avoid version conflicts.
+The toolbox is packaged as a standard Python distribution, so it can be installed directly from GitHub with any PEP 517 compatible tool (`pip`, `uv`, Databricks `%pip`). Re-running the same install command is idempotent.
 
-### Create the Environment
-First, clone the repository and navigate into the folder. Then, create the `shap_aie` environment:
+### Option 1 — Install directly from GitHub (Recommended)
 
 ```bash
-# Using the environment.yml (Recommended for Conda users)
+# pip
+pip install git+https://github.com/SavvinaFil/AI-Explainability
+
+# uv
+uv pip install git+https://github.com/SavvinaFil/AI-Explainability
+```
+
+### Option 2 — Install on Databricks
+Run this in a notebook cell attached to your cluster; the `%pip` magic restarts the Python interpreter automatically once the install completes.
+
+```python
+%pip install git+https://github.com/SavvinaFil/AI-Explainability
+```
+
+### Optional extras
+Heavier or environment-specific dependencies are exposed as extras so you only pay for what you use:
+
+```bash
+# PyTorch backend (needed for the LSTM explainer)
+pip install "ai-explainability[torch] @ git+https://github.com/SavvinaFil/AI-Explainability"
+
+# gRPC server / client stack
+pip install "ai-explainability[grpc] @ git+https://github.com/SavvinaFil/AI-Explainability"
+
+# Everything
+pip install "ai-explainability[all] @ git+https://github.com/SavvinaFil/AI-Explainability"
+```
+
+### Option 3 — Local development environment (Conda)
+If you are working on the source, a Conda environment is still the easiest way to get the full pinned dependency set:
+
+```bash
+git clone https://github.com/SavvinaFil/AI-Explainability
+cd AI-Explainability
 conda env create -f environment.yml
+conda activate shap_aie
+pip install -e .
 ```
 
 
@@ -70,21 +104,22 @@ Create a JSON file to define the analysis scope. This file tells the toolbox whe
 </details>
 
 ### 3. Run the Toolbox
-Execute the analysis via the command line using the `--config` flag:
+Execute the analysis via the command line using the `--config` flag. After a `pip install` you can use the installed `ai-explainability` console script; from a cloned source tree you can still run `python main.py` directly.
 
 * Run Time-Series Analysis
 ```bash
-python main.py --config examples/timeseries/lstm/config.json
+ai-explainability --config examples/timeseries/lstm/config.json
+# equivalent: python main.py --config examples/timeseries/lstm/config.json
 ```
 
 * Run Tabular Classification
 ```bash
-python main.py --config examples/tabular/binary_classify/config.json
+ai-explainability --config examples/tabular/binary_classify/config.json
 ```
 
 * Run Tabular Regression
 ```bash
-python main.py --config examples/tabular/multioutput_regress/config.json
+ai-explainability --config examples/tabular/multioutput_regress/config.json
 ```
 
 ---

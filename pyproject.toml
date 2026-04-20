@@ -1,0 +1,124 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-explainability"
+version = "0.1.0"
+description = "A standardized, model-agnostic toolbox for AI explainability using SHAP, with a focus on energy-sector workflows."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Bastien Giraud", email = "bagir@dtu.dk" },
+]
+maintainers = [
+    { name = "Bastien Giraud", email = "bagir@dtu.dk" },
+]
+keywords = [
+    "shap",
+    "explainability",
+    "xai",
+    "machine-learning",
+    "energy",
+    "random-forest",
+    "lstm",
+    "arima",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Core runtime dependencies. Loose lower bounds so the library coexists with
+# pre-installed versions on Databricks clusters and other managed environments.
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "shap>=0.44",
+    "matplotlib>=3.7",
+    "joblib>=1.3",
+    "cloudpickle>=2.2",
+    "tqdm>=4.65",
+    "openpyxl>=3.1",
+    "nbformat>=5.9",
+    "nbconvert>=7.0",
+    "ipykernel>=6.20",
+    "ipython>=8.10",
+]
+
+[project.optional-dependencies]
+# LSTM / PyTorch backend — heavy, so opt-in.
+torch = [
+    "torch>=2.0",
+]
+# gRPC server / client stack in server.py and client.py.
+grpc = [
+    "grpcio>=1.60",
+    "grpcio-tools>=1.60",
+    "protobuf>=4.24",
+]
+# Convenience meta-extra that pulls everything.
+all = [
+    "ai-explainability[torch,grpc]",
+]
+# Developer tooling.
+dev = [
+    "build>=1.0",
+    "pytest>=7.4",
+    "ruff>=0.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/SavvinaFil/AI-Explainability"
+Repository = "https://github.com/SavvinaFil/AI-Explainability"
+Issues = "https://github.com/SavvinaFil/AI-Explainability/issues"
+
+# Expose the CLI entry point so `ai-explainability --config ...` works after install.
+[project.scripts]
+ai-explainability = "main:main"
+
+# ---------------------------------------------------------------------------
+# setuptools configuration
+# ---------------------------------------------------------------------------
+# The repo uses a flat layout with multiple top-level importable modules and
+# packages. We declare them explicitly rather than relying on auto-discovery
+# because auto-discovery would otherwise refuse to build (multiple top-level
+# packages present) or try to ship non-python folders like source/ and examples/.
+[tool.setuptools]
+# Top-level single-file modules that need to be importable after install.
+py-modules = [
+    "main",
+    "client",
+    "server",
+    "AI_explainability_pb2",
+    "AI_explainability_pb2_grpc",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "analysis*",
+    "output*",
+]
+exclude = [
+    "examples*",
+    "source*",
+    "docs*",
+    "tests*",
+    "output.__pycache__*",
+]
+
+# Ship the .proto file and any non-python assets that live inside packages.
+[tool.setuptools.package-data]
+"*" = ["*.proto", "*.json"]
